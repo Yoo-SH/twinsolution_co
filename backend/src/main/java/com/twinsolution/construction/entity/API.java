@@ -38,7 +38,7 @@ public class API {
     private String status;
 
     @CreationTimestamp
-    @Column(name = "craeted_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
