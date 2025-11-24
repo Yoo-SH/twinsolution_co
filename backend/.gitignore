@@ -35,3 +35,8 @@ out/
 
 ### VS Code ###
 .vscode/
+
+
+### data
+twinsolution.lock.db
+twinsolution.mv.db
