@@ -1,0 +1,106 @@
+.project-table-container {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  margin-top: 24px;
+}
+
+.table-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+}
+
+.project-table {
+  width: 100%;
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.5fr;
+  gap: 16px;
+  background-color: #f2f4f7;
+  padding: 12px 16px;
+  border-radius: 8px 8px 0 0;
+}
+
+.header-cell {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.5fr;
+  gap: 16px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  align-items: center;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.table-cell {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.project-name {
+  font-weight: 400;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.status-pending {
+  background-color: rgba(237, 197, 49, 0.15);
+  color: #edc531;
+}
+
+.status-progress {
+  background-color: rgba(27, 38, 59, 0.15);
+  color: #1b263b;
+}
+
+.status-initial {
+  background-color: rgba(119, 141, 169, 0.15);
+  color: #778da9;
+}
+
+.progress-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 4px;
+  background-color: #e0e0e0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--secondary-color);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  min-width: 40px;
+  text-align: right;
+  font-size: 14px;
+}
+

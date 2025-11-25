@@ -1,0 +1,171 @@
+.api-card {
+  background-color: white;
+  border: 1.5px solid #c9c9c9;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+  position: relative;
+  transition: box-shadow 0.2s ease;
+}
+
+.api-card:hover {
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.api-card.error {
+  border-color: #d64545;
+  background-color: rgba(214, 69, 69, 0.02);
+}
+
+.api-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.api-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.api-icon {
+  font-size: 24px;
+}
+
+.api-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.api-status-badge {
+  padding: 4px 12px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.api-status-badge.active {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: #4caf50;
+}
+
+.api-status-badge.error {
+  background-color: rgba(214, 69, 69, 0.15);
+  color: #d64545;
+}
+
+.api-category-badge {
+  background-color: rgba(27, 38, 59, 0.15);
+  color: #1b263b;
+  padding: 4px 12px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.api-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.api-detail-row {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  line-height: 30px;
+}
+
+.detail-label {
+  min-width: 150px;
+  color: var(--text-primary);
+}
+
+.detail-value {
+  color: var(--text-primary);
+}
+
+.detail-value.method {
+  font-weight: 600;
+}
+
+.url-link {
+  color: #1b263b;
+  font-weight: bold;
+  text-decoration: underline;
+  text-underline-position: from-font;
+}
+
+.url-link:hover {
+  opacity: 0.8;
+}
+
+.api-error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background-color: rgba(214, 69, 69, 0.1);
+  border-left: 3px solid #d64545;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #d64545;
+  font-weight: 500;
+}
+
+.error-icon {
+  font-size: 16px;
+}
+
+.api-actions {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  display: flex;
+  gap: 12px;
+}
+
+.api-action-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background-color: transparent;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.api-action-btn.test {
+  color: #4caf50;
+}
+
+.api-action-btn.test:hover {
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+.api-action-btn.refresh:hover {
+  background-color: #f0f0f0;
+}
+
+.api-action-btn.edit:hover {
+  background-color: rgba(65, 90, 119, 0.1);
+}
+
+.api-action-btn.delete {
+  color: #f44336;
+}
+
+.api-action-btn.delete:hover {
+  background-color: rgba(244, 67, 54, 0.1);
+}
+

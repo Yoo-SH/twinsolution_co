@@ -1,0 +1,50 @@
+.file-upload-area {
+  background-color: white;
+  border: 2px dashed #c9c9c9;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 24px;
+}
+
+.file-upload-area.dragging {
+  border-color: var(--secondary-color);
+  background-color: rgba(65, 90, 119, 0.05);
+}
+
+.upload-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.upload-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+}
+
+.upload-info {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 24px 0;
+}
+
+.file-select-btn {
+  display: inline-block;
+  background-color: #f7c843;
+  color: var(--text-primary);
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 24px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.file-select-btn:hover {
+  background-color: #e5b739;
+}
+

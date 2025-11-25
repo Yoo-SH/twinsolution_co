@@ -1,0 +1,140 @@
+.chunking-settings-layout {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.chunking-settings-main {
+  flex: 1;
+  margin-left: 220px;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+  background-color: #ffffff;
+}
+
+.chunking-settings-content {
+  padding: 24px 40px 80px;
+  max-width: 1440px;
+  width: 100%;
+  position: relative;
+}
+
+.settings-header-actions {
+  position: absolute;
+  right: 40px;
+  top: -60px;
+  display: flex;
+  gap: 12px;
+  z-index: 10;
+}
+
+.cancel-btn,
+.save-btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn {
+  background-color: white;
+  border: 1.5px solid var(--secondary-color);
+  color: var(--secondary-color);
+}
+
+.cancel-btn:hover {
+  background-color: rgba(65, 90, 119, 0.05);
+}
+
+.save-btn {
+  background-color: var(--secondary-color);
+  border: none;
+  color: white;
+}
+
+.save-btn:hover {
+  background-color: var(--primary-color);
+}
+
+.settings-panel {
+  max-width: 600px;
+  background-color: white;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+  margin-bottom: 32px;
+}
+
+.settings-panel.advanced {
+  margin-bottom: 80px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--text-primary);
+  margin: 0 0 24px 0;
+}
+
+.advanced-setting {
+  margin-bottom: 24px;
+}
+
+.advanced-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.advanced-select,
+.advanced-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid #c9c9c9;
+  border-radius: 8px;
+  font-size: 16px;
+  background-color: white;
+}
+
+.advanced-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.checkbox-setting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-setting input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.checkbox-setting label {
+  font-size: 16px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+@media (max-width: 1200px) {
+  .chunking-settings-main {
+    margin-left: 0;
+  }
+
+  .chunking-settings-content {
+    padding: 16px;
+  }
+}
+

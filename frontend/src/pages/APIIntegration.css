@@ -1,0 +1,108 @@
+.api-integration-layout {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.api-integration-main {
+  flex: 1;
+  margin-left: 220px;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+  background-color: #ffffff;
+}
+
+.api-integration-content {
+  padding: 24px 40px;
+  max-width: 1400px;
+  width: 100%;
+}
+
+.api-header-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+}
+
+.add-api-btn {
+  background-color: var(--secondary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.add-api-btn:hover {
+  background-color: var(--primary-color);
+}
+
+.api-stats-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.api-cards-section {
+  margin-bottom: 32px;
+}
+
+.api-info-panel {
+  background-color: #f2f4f7;
+  border: 1px solid #c9c9c9;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 40px;
+}
+
+.info-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.info-icon {
+  font-size: 24px;
+}
+
+.info-panel-header h3 {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.info-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.info-list li {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 30px;
+}
+
+@media (max-width: 768px) {
+  .api-integration-main {
+    margin-left: 0;
+  }
+
+  .api-integration-content {
+    padding: 16px;
+  }
+
+  .api-stats-section {
+    grid-template-columns: 1fr;
+  }
+}
+
