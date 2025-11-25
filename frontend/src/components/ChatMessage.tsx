@@ -1,13 +1,15 @@
 import './ChatMessage.css';
 
 interface ChatMessageProps {
-  type: 'ai' | 'user';
+  role: 'assistant' | 'user';
   message: string;
   timestamp: string;
   source?: string;
 }
 
-const ChatMessage = ({ type, message, timestamp, source }: ChatMessageProps) => {
+const ChatMessage = ({ role, message, timestamp, source }: ChatMessageProps) => {
+  const type = role === 'assistant' ? 'ai' : 'user';
+
   return (
     <div className={`chat-message ${type}-message`}>
       <div className="message-header">

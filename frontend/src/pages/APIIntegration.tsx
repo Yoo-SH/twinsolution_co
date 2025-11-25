@@ -1,110 +1,163 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import StatCard from '../components/StatCard';
 import APICard from '../components/APICard';
+import {
+  createApi,
+  deleteApi,
+  getApis,
+  testApi,
+  updateApi,
+  updateApiStatus,
+} from '../services/api';
+import type { ApiIntegrationItem } from '../types/api';
 import './APIIntegration.css';
 
-interface APIConfig {
-  id: number;
-  name: string;
-  url: string;
-  method: string;
-  schedule: string;
-  lastSync: string;
-  nextSync: string;
-  status: 'active' | 'error';
-  category: string;
-  errorMessage?: string;
-}
-
 const APIIntegration = () => {
-  const [apis] = useState<APIConfig[]>([
-    {
-      id: 1,
-      name: '조달청 나라장터',
-      url: 'https://www.g2b.go.kr/api/construction-prices',
-      method: 'GET',
-      schedule: '매주 월요일 00:00',
-      lastSync: '2024-11-11 00:00:15',
-      nextSync: '2024-11-18 00:00:00',
-      status: 'active',
-      category: '단가정보',
-    },
-    {
-      id: 2,
-      name: '국가법령정보센터',
-      url: 'https://www.law.go.kr/api/building-law',
-      method: 'GET',
-      schedule: '매월 1일 00:00',
-      lastSync: '2024-11-01 00:05:22',
-      nextSync: '2024-12-01 00:00:00',
-      status: 'active',
-      category: '법령',
-    },
-    {
-      id: 3,
-      name: '한국건설기술연구원',
-      url: 'https://www.kict.re.kr/api/standards',
-      method: 'GET',
-      schedule: '매주 수요일 03:00',
-      lastSync: '2024-11-06 03:00:00',
-      nextSync: '2024-11-13 03:00:00',
-      status: 'error',
-      category: '표준품셈',
-      errorMessage: '연결 실패 : 인증 토큰이 만료되었습니다. API 키를 확인해주세요.',
-    },
-  ]);
+  const [apis, setApis] = useState<ApiIntegrationItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
 
-  const stats = [
-    {
-      title: '전체 API',
-      value: 3,
-      trend: '',
-      icon: '🌐',
-      iconColor: 'rgba(200, 200, 200, 0.3)',
-    },
-    {
-      title: '활성화',
-      value: 2,
-      trend: '',
-      icon: '✅',
-      iconColor: 'rgba(144, 238, 144, 0.3)',
-    },
-    {
-      title: '오류',
-      value: 1,
-      trend: '',
-      icon: '⚠️',
-      iconColor: 'rgba(255, 182, 193, 0.3)',
-    },
-    {
-      title: '비활성화',
-      value: 0,
-      trend: '',
-      icon: '⭕',
-      iconColor: 'rgba(255, 255, 224, 0.5)',
-    },
-  ];
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
-  const handleTest = (id: number) => {
-    console.log('Test API:', id);
+  const loadApis = useCallback(async () => {
+    if (!isMountedRef.current) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await getApis();
+      if (!isMountedRef.current) return;
+      setApis(data);
+    } catch (err) {
+      if (!isMountedRef.current) return;
+      const message =
+        err instanceof Error ? err.message : 'API 목록을 불러오지 못했습니다.';
+      setError(message);
+    } finally {
+      if (!isMountedRef.current) return;
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadApis();
+  }, [loadApis]);
+
+  const stats = useMemo(() => {
+    const total = apis.length;
+    const active = apis.filter((api) => api.status === 'active').length;
+    const errorCount = apis.filter((api) => api.status === 'error').length;
+    const inactive = total - active - errorCount;
+
+    return [
+      {
+        title: '전체 API',
+        value: total,
+        trend: '',
+        icon: '🌐',
+        iconColor: 'rgba(200, 200, 200, 0.3)',
+      },
+      {
+        title: '활성화',
+        value: active,
+        trend: '',
+        icon: '✅',
+        iconColor: 'rgba(144, 238, 144, 0.3)',
+      },
+      {
+        title: '오류',
+        value: errorCount,
+        trend: '',
+        icon: '⚠️',
+        iconColor: 'rgba(255, 182, 193, 0.3)',
+      },
+      {
+        title: '비활성화',
+        value: inactive,
+        trend: '',
+        icon: '⭕',
+        iconColor: 'rgba(255, 255, 224, 0.5)',
+      },
+    ];
+  }, [apis]);
+
+  const handleTest = async (id: number) => {
+    try {
+      const result = await testApi(id);
+      alert(`상태: ${result.status}\n메시지: ${result.message}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '테스트를 실행하지 못했습니다.';
+      alert(message);
+    }
   };
 
-  const handleRefresh = (id: number) => {
-    console.log('Refresh API:', id);
+  const handleToggleStatus = async (api: ApiIntegrationItem) => {
+    const nextStatus = api.status === 'active' ? 'inactive' : 'active';
+    try {
+      await updateApiStatus(api.id, { status: nextStatus });
+      await loadApis();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : '상태를 변경하지 못했습니다.';
+      alert(message);
+    }
   };
 
-  const handleEdit = (id: number) => {
-    console.log('Edit API:', id);
+  const handleEdit = async (api: ApiIntegrationItem) => {
+    const name = window.prompt('API 이름을 입력하세요', api.name);
+    if (!name) return;
+    const baseUrl = window.prompt('API URL을 입력하세요', api.baseUrl);
+    if (!baseUrl) return;
+    const method = window.prompt('HTTP 메서드 (GET/POST 등)', api.method) ?? api.method;
+    const authKeyInput = window.prompt('인증 키(선택)', api.authKey ?? '');
+    const nextAuthKey =
+      authKeyInput === null ? api.authKey : authKeyInput.trim() ? authKeyInput : undefined;
+
+    try {
+      await updateApi(api.id, { name, baseUrl, method, authKey: nextAuthKey ?? undefined });
+      await loadApis();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'API 정보를 수정하지 못했습니다.';
+      alert(message);
+    }
   };
 
-  const handleDelete = (id: number) => {
-    console.log('Delete API:', id);
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('API를 삭제하시겠습니까?')) return;
+    try {
+      await deleteApi(id);
+      await loadApis();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'API를 삭제하지 못했습니다.';
+      alert(message);
+    }
   };
 
-  const handleAddAPI = () => {
-    console.log('Add new API');
+  const handleAddAPI = async () => {
+    const name = window.prompt('API 이름을 입력하세요');
+    if (!name) return;
+    const baseUrl = window.prompt('API URL을 입력하세요');
+    if (!baseUrl) return;
+    const method = window.prompt('HTTP 메서드 (GET/POST 등)', 'GET') ?? 'GET';
+    const authKeyInput = window.prompt('인증 키(선택)');
+    const authKey = authKeyInput && authKeyInput.trim() ? authKeyInput : undefined;
+
+    try {
+      await createApi({ name, baseUrl, method, authKey });
+      await loadApis();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'API를 추가하지 못했습니다.';
+      alert(message);
+    }
   };
 
   return (
@@ -113,18 +166,25 @@ const APIIntegration = () => {
       <main className="api-integration-main">
         <Header title="API 연동" />
         <div className="api-integration-content">
-          {/* Header Actions */}
+          {error && (
+            <div className="api-error">
+              <span>{error}</span>
+              <button type="button" className="api-retry-button" onClick={loadApis}>
+                다시 시도
+              </button>
+            </div>
+          )}
+
           <div className="api-header-actions">
             <button className="add-api-btn" onClick={handleAddAPI}>
               + API 추가
             </button>
           </div>
 
-          {/* Statistics Section */}
           <section className="api-stats-section">
-            {stats.map((stat, index) => (
+            {stats.map((stat) => (
               <StatCard
-                key={index}
+                key={stat.title}
                 title={stat.title}
                 value={stat.value}
                 trend={stat.trend}
@@ -134,39 +194,39 @@ const APIIntegration = () => {
             ))}
           </section>
 
-          {/* API Cards List */}
           <section className="api-cards-section">
-            {apis.map((api) => (
-              <APICard
-                key={api.id}
-                name={api.name}
-                url={api.url}
-                method={api.method}
-                schedule={api.schedule}
-                lastSync={api.lastSync}
-                nextSync={api.nextSync}
-                status={api.status}
-                category={api.category}
-                errorMessage={api.errorMessage}
-                onTest={() => handleTest(api.id)}
-                onRefresh={() => handleRefresh(api.id)}
-                onEdit={() => handleEdit(api.id)}
-                onDelete={() => handleDelete(api.id)}
-              />
-            ))}
+            {loading ? (
+              <div className="api-loading">API 정보를 불러오는 중입니다...</div>
+            ) : apis.length ? (
+              apis.map((api) => (
+                <APICard
+                  key={api.id}
+                  name={api.name}
+                  url={api.baseUrl}
+                  method={api.method}
+                  status={api.status}
+                  category="외부 연동"
+                  onTest={() => handleTest(api.id)}
+                  onRefresh={() => handleToggleStatus(api)}
+                  onEdit={() => handleEdit(api)}
+                  onDelete={() => handleDelete(api.id)}
+                />
+              ))
+            ) : (
+              <div className="api-loading">등록된 API가 없습니다.</div>
+            )}
           </section>
 
-          {/* Info Panel */}
           <div className="api-info-panel">
             <div className="info-panel-header">
               <span className="info-icon">🌍</span>
               <h3>API 연동 안내</h3>
             </div>
             <ul className="info-list">
-              <li>• API 추가 후 '연결 테스트'로 바로는 연결을 확인하세요.</li>
-              <li>• 스케줄은 Airflow DAG으로 관리됩니다.</li>
-              <li>• 수집된 데이터는 자동으로 Vector DB에 임베딩됩니다.</li>
-              <li>• 민감한 API 키는 환경 변수로 관리됩니다.</li>
+              <li>• API 추가 후 '연결 테스트'로 즉시 연결 상태를 확인하세요.</li>
+              <li>• 스케줄 관리는 추후 Airflow DAG로 확장될 예정입니다.</li>
+              <li>• 수집된 데이터는 Vector DB에 자동으로 적재됩니다.</li>
+              <li>• 민감한 API 키는 환경 변수로 안전하게 관리하세요.</li>
             </ul>
           </div>
         </div>

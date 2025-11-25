@@ -111,3 +111,15 @@
   filter: brightness(0.8);
 }
 
+.document-table.loading,
+.document-table.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  font-size: 15px;
+  color: var(--text-secondary, #5a5a5a);
+  background-color: #f9fafb;
+  font-weight: 500;
+}
+

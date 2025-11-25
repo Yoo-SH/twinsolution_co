@@ -4,11 +4,11 @@ interface APICardProps {
   name: string;
   url: string;
   method: string;
-  schedule: string;
-  lastSync: string;
-  nextSync: string;
-  status: 'active' | 'error';
-  category: string;
+  schedule?: string;
+  lastSync?: string;
+  nextSync?: string;
+  status: string;
+  category?: string;
   errorMessage?: string;
   onTest: () => void;
   onRefresh: () => void;
@@ -31,16 +31,23 @@ const APICard = ({
   onEdit,
   onDelete,
 }: APICardProps) => {
+  const statusKey =
+    status === 'error' ? 'error' : status === 'inactive' ? 'inactive' : 'active';
+
   return (
-    <div className={`api-card ${status === 'error' ? 'error' : ''}`}>
+    <div className={`api-card ${statusKey === 'error' ? 'error' : ''}`}>
       <div className="api-card-header">
         <div className="api-header-left">
           <span className="api-icon">🔗</span>
           <h3 className="api-name">{name}</h3>
-          <span className={`api-status-badge ${status}`}>
-            {status === 'active' ? '활성' : '오류'}
+          <span className={`api-status-badge ${statusKey}`}>
+            {statusKey === 'active'
+              ? '활성'
+              : statusKey === 'inactive'
+              ? '비활성'
+              : '오류'}
           </span>
-          <span className="api-category-badge">{category}</span>
+          {category && <span className="api-category-badge">{category}</span>}
         </div>
       </div>
 
@@ -57,15 +64,15 @@ const APICard = ({
         </div>
         <div className="api-detail-row">
           <span className="detail-label">스케줄 :</span>
-          <span className="detail-value">{schedule}</span>
+          <span className="detail-value">{schedule ?? '-'}</span>
         </div>
         <div className="api-detail-row">
           <span className="detail-label">마지막 동기화 :</span>
-          <span className="detail-value">{lastSync}</span>
+          <span className="detail-value">{lastSync ?? '-'}</span>
         </div>
         <div className="api-detail-row">
           <span className="detail-label">다음 동기화 :</span>
-          <span className="detail-value">{nextSync}</span>
+          <span className="detail-value">{nextSync ?? '-'}</span>
         </div>
       </div>
 

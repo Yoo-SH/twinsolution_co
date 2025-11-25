@@ -54,6 +54,39 @@
   margin-bottom: 32px;
 }
 
+.api-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: 10px;
+  background-color: #fff4f4;
+  border: 1px solid rgba(197, 48, 48, 0.2);
+  color: #c53030;
+  font-size: 14px;
+}
+
+.api-retry-button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  background-color: #c53030;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.api-loading {
+  padding: 32px;
+  text-align: center;
+  border: 1px dashed #d0d5dd;
+  border-radius: 12px;
+  color: var(--text-secondary, #5a5a5a);
+  font-weight: 500;
+}
+
 .api-info-panel {
   background-color: #f2f4f7;
   border: 1px solid #c9c9c9;

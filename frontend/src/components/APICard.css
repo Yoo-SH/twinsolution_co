@@ -58,6 +58,11 @@
   color: #d64545;
 }
 
+.api-status-badge.inactive {
+  background-color: rgba(201, 201, 201, 0.3);
+  color: #6b7280;
+}
+
 .api-category-badge {
   background-color: rgba(27, 38, 59, 0.15);
   color: #1b263b;
