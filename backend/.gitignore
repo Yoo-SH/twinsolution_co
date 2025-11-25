@@ -40,3 +40,7 @@ out/
 ### data
 twinsolution.lock.db
 twinsolution.mv.db
+
+
+###
+.env
