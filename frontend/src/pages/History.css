@@ -99,6 +99,109 @@
   margin-bottom: 40px;
 }
 
+.history-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: 10px;
+  background-color: #fff4f4;
+  border: 1px solid rgba(197, 48, 48, 0.2);
+  color: #c53030;
+  font-size: 14px;
+}
+
+.history-retry-button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  background-color: #c53030;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.history-retry-button:hover {
+  opacity: 0.9;
+}
+
+.project-selector {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.project-selector label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.project-selector select {
+  min-width: 260px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d0d5dd;
+  font-size: 14px;
+}
+
+.refresh-button {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  background-color: var(--secondary-color, #415a77);
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.refresh-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.history-loading,
+.history-empty {
+  padding: 32px;
+  text-align: center;
+  font-size: 15px;
+  color: var(--text-secondary, #5a5a5a);
+  border: 1px dashed #d0d5dd;
+  border-radius: 12px;
+}
+
+.documents-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.generated-doc-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e4e7ec;
+  background-color: #ffffff;
+}
+
+.generated-doc-card h4 {
+  margin: 0 0 4px 0;
+}
+
+.generated-doc-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
 @media (max-width: 768px) {
   .history-main {
     margin-left: 0;
@@ -114,6 +217,11 @@
 
   .search-filter-section {
     flex-direction: column;
+  }
+
+  .project-selector {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 

@@ -55,6 +55,43 @@
   background: #555;
 }
 
+.chat-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  background-color: #fff4f4;
+  border: 1px solid rgba(197, 48, 48, 0.2);
+  color: #c53030;
+  font-size: 14px;
+}
+
+.chat-retry-button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  background-color: #c53030;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat-retry-button:hover {
+  opacity: 0.9;
+}
+
+.chat-loading {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary, #5a5a5a);
+  font-weight: 500;
+}
+
 @media (max-width: 1200px) {
   .ai-chat-main {
     margin-left: 0;

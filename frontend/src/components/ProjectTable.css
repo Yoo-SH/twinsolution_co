@@ -77,6 +77,11 @@
   color: #778da9;
 }
 
+.status-completed {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: #4caf50;
+}
+
 .progress-cell {
   display: flex;
   align-items: center;
@@ -102,5 +107,18 @@
   min-width: 40px;
   text-align: right;
   font-size: 14px;
+}
+
+.project-table.loading,
+.project-table.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  color: var(--text-secondary, #5a5a5a);
+  font-size: 14px;
+  font-weight: 500;
 }
 
