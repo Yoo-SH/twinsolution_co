@@ -294,11 +294,14 @@ public class OpenAiChatClient {
     /**
      * 사용 가능한 모델 목록
      */
+    /**
+     * List of available OpenAI model names.
+     * NOTE: This list should be periodically updated according to https://platform.openai.com/docs/models
+     */
     public static class AvailableModels {
         public static final String GPT_3_5_TURBO = "gpt-3.5-turbo";
-        public static final String GPT_3_5_TURBO_16K = "gpt-3.5-turbo-16k";
         public static final String GPT_4 = "gpt-4";
-        public static final String GPT_4_TURBO = "gpt-4-turbo-preview";
-        public static final String GPT_4_32K = "gpt-4-32k";
+        public static final String GPT_4_TURBO = "gpt-4-turbo";
+        public static final String GPT_4O = "gpt-4o";
     }
 }
