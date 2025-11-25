@@ -21,10 +21,7 @@ const Sidebar = () => {
     <aside className="sidebar">
       <div className="sidebar-header">
         <div className="logo">
-          <div className="logo-icon">TM</div>
-          <div className="logo-text">
-            <h1>Triple Major</h1>
-          </div>
+          <img src="/triplemahorlogo.png" alt="Triple Major Logo" className="logo-image" />
         </div>
         <div className="project-info">
           <h2>건축허가</h2>

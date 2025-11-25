@@ -18,28 +18,14 @@
 .logo {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
   margin-bottom: 16px;
 }
 
-.logo-icon {
-  width: 46px;
-  height: 46px;
-  background: linear-gradient(135deg, #f4a261, #e76f51);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 18px;
-  color: white;
-}
-
-.logo-text h1 {
-  font-size: 14px;
-  font-weight: 700;
-  color: white;
-  margin: 0;
+.logo-image {
+  width: 156px;
+  height: auto;
+  object-fit: contain;
 }
 
 .project-info {
