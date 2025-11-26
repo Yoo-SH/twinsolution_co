@@ -1,11 +1,13 @@
 package com.twinsolution.construction.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
 public class APIDto {
 
+    @Schema(name = "APIRequest", description = "외부 API 등록 요청")
     @Getter
     @Setter
     @NoArgsConstructor
@@ -19,6 +21,7 @@ public class APIDto {
         private String status;
     }
 
+    @Schema(name = "APIResponse", description = "외부 API 응답")
     @Getter
     @Setter
     @NoArgsConstructor
@@ -35,6 +38,7 @@ public class APIDto {
         private LocalDateTime updatedAt;
     }
 
+    @Schema(name = "APIStatusUpdateRequest", description = "API 상태 변경 요청")
     @Getter
     @Setter
     @NoArgsConstructor
@@ -44,6 +48,7 @@ public class APIDto {
         private String status;
     }
 
+    @Schema(name = "APITestCallResponse", description = "API 테스트 호출 응답")
     @Getter
     @Setter
     @NoArgsConstructor

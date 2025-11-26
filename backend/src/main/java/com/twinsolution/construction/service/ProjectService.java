@@ -1,6 +1,7 @@
 package com.twinsolution.construction.service;
 
 import com.twinsolution.construction.dto.ProjectDto;
+import com.twinsolution.construction.entity.ChatSession;
 import com.twinsolution.construction.entity.Project;
 import com.twinsolution.construction.exception.ResourceNotFoundException;
 import com.twinsolution.construction.repository.ChatSessionRepository;
@@ -27,7 +28,13 @@ public class ProjectService {
         Project project = Project.builder()
                 .name(request.getName())
                 .description(request.getDescription())
-                .status(request.getStatus() != null ? request.getStatus() : "진행중")
+                .location(request.getLocation())
+                .zoning(request.getZoning())
+                .usage(request.getUsage())
+                .totalFloorArea(request.getTotalFloorArea())
+                .floors(request.getFloors())
+                .parkingSpaces(request.getParkingSpaces())
+                .status(request.getStatus() != null ? request.getStatus() : "초기단계")
                 .build();
 
         Project savedProject = projectRepository.save(project);
@@ -58,6 +65,24 @@ public class ProjectService {
         if (request.getDescription() != null) {
             project.setDescription(request.getDescription());
         }
+        if (request.getLocation() != null) {
+            project.setLocation(request.getLocation());
+        }
+        if (request.getZoning() != null) {
+            project.setZoning(request.getZoning());
+        }
+        if (request.getUsage() != null) {
+            project.setUsage(request.getUsage());
+        }
+        if (request.getTotalFloorArea() != null) {
+            project.setTotalFloorArea(request.getTotalFloorArea());
+        }
+        if (request.getFloors() != null) {
+            project.setFloors(request.getFloors());
+        }
+        if (request.getParkingSpaces() != null) {
+            project.setParkingSpaces(request.getParkingSpaces());
+        }
         if (request.getStatus() != null) {
             project.setStatus(request.getStatus());
         }
@@ -74,6 +99,35 @@ public class ProjectService {
         return projectRepository.countByStatus(status);
     }
 
+    /**
+     * 프로젝트의 채팅 세션을 가져오거나 없으면 생성합니다.
+     * 프로젝트마다 하나의 세션만 유지됩니다.
+     */
+    @Transactional
+    public Long getOrCreateSessionForProject(Long projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("프로젝트", "ID", projectId));
+
+        // 프로젝트의 기존 세션 찾기
+        List<ChatSession> sessions = chatSessionRepository.findByProjectIdOrderByUpdatedAtDesc(projectId);
+
+        if (!sessions.isEmpty()) {
+            // 기존 세션이 있으면 첫 번째(가장 최근) 세션 반환
+            return sessions.get(0).getId();
+        }
+
+        // 세션이 없으면 새로 생성
+        String defaultQuickQuestions = "[\"준주거지역에 필요한 서류는?\", \"내진설계 의무 대상\", \"주차장 설치 기준\", \"건축허가신청서 작성 방법\"]";
+
+        ChatSession newSession = ChatSession.builder()
+                .project(project)
+                .quickQuestion(defaultQuickQuestions)
+                .build();
+
+        ChatSession savedSession = chatSessionRepository.save(newSession);
+        return savedSession.getId();
+    }
+
     private ProjectDto.Response convertToResponse(Project project) {
         LocalDateTime latestSessionAt = project.getChatSessions().stream()
                 .map(session -> session.getUpdatedAt())
@@ -84,6 +138,12 @@ public class ProjectService {
                 .id(project.getId())
                 .name(project.getName())
                 .description(project.getDescription())
+                .location(project.getLocation())
+                .zoning(project.getZoning())
+                .usage(project.getUsage())
+                .totalFloorArea(project.getTotalFloorArea())
+                .floors(project.getFloors())
+                .parkingSpaces(project.getParkingSpaces())
                 .status(project.getStatus())
                 .progress(calculateProgress(project))
                 .createdAt(project.getCreatedAt())
