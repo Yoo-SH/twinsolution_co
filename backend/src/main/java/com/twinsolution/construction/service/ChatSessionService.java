@@ -4,6 +4,7 @@ import com.twinsolution.construction.dto.ChatSessionDto;
 import com.twinsolution.construction.dto.DocumentDto;
 import com.twinsolution.construction.entity.ChatSession;
 import com.twinsolution.construction.entity.Project;
+import com.twinsolution.construction.exception.ResourceNotFoundException;
 import com.twinsolution.construction.repository.ChatSessionRepository;
 import com.twinsolution.construction.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,7 @@ public class ChatSessionService {
     @Transactional
     public ChatSessionDto.Response createChatSession(ChatSessionDto.Request request) {
         Project project = projectRepository.findById(request.getProjectId())
-                .orElseThrow(() -> new RuntimeException("Project not found with id: " + request.getProjectId()));
+                .orElseThrow(() -> new ResourceNotFoundException("프로젝트", "ID", request.getProjectId()));
 
         String defaultQuickQuestions = request.getQuickQuestion() != null
                 ? request.getQuickQuestion()
@@ -50,14 +51,14 @@ public class ChatSessionService {
 
     public ChatSessionDto.Response getChatSessionById(Long sessionId) {
         ChatSession session = chatSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("Chat session not found with id: " + sessionId));
+                .orElseThrow(() -> new ResourceNotFoundException("채팅 세션", "ID", sessionId));
         return convertToResponse(session);
     }
 
     @Transactional
     public ChatSessionDto.Response updateQuickQuestions(Long sessionId, ChatSessionDto.QuickQuestionRequest request) {
         ChatSession session = chatSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("Chat session not found with id: " + sessionId));
+                .orElseThrow(() -> new ResourceNotFoundException("채팅 세션", "ID", sessionId));
 
         session.setQuickQuestion(request.getQuickQuestion());
         return convertToResponse(session);
@@ -66,7 +67,7 @@ public class ChatSessionService {
     @Transactional
     public List<DocumentDto.Response> createGeneratedDocuments(Long sessionId, ChatSessionDto.GeneratedDocumentRequest request) {
         ChatSession session = chatSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("Chat session not found with id: " + sessionId));
+                .orElseThrow(() -> new ResourceNotFoundException("채팅 세션", "ID", sessionId));
 
         return request.getDocuments().stream()
                 .map(docItem -> {

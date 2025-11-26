@@ -3,6 +3,7 @@ package com.twinsolution.construction.service;
 import com.twinsolution.construction.dto.ChatMessageDto;
 import com.twinsolution.construction.entity.ChatMessage;
 import com.twinsolution.construction.entity.ChatSession;
+import com.twinsolution.construction.exception.ResourceNotFoundException;
 import com.twinsolution.construction.repository.ChatMessageRepository;
 import com.twinsolution.construction.repository.ChatSessionRepository;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +40,7 @@ public class ChatMessageService {
     @Transactional
     public ChatMessageDto.Response sendMessage(Long sessionId, ChatMessageDto.Request request) {
         ChatSession session = chatSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("Chat session not found with id: " + sessionId));
+                .orElseThrow(() -> new ResourceNotFoundException("채팅 세션", "ID", sessionId));
 
         ChatMessage userMessage = ChatMessage.builder()
                 .chatSession(session)

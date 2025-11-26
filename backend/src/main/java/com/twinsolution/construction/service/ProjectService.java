@@ -2,6 +2,7 @@ package com.twinsolution.construction.service;
 
 import com.twinsolution.construction.dto.ProjectDto;
 import com.twinsolution.construction.entity.Project;
+import com.twinsolution.construction.exception.ResourceNotFoundException;
 import com.twinsolution.construction.repository.ChatSessionRepository;
 import com.twinsolution.construction.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
@@ -42,14 +43,14 @@ public class ProjectService {
 
     public ProjectDto.Response getProjectById(Long projectId) {
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
+                .orElseThrow(() -> new ResourceNotFoundException("프로젝트", "ID", projectId));
         return convertToResponse(project);
     }
 
     @Transactional
     public ProjectDto.Response updateProject(Long projectId, ProjectDto.UpdateRequest request) {
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
+                .orElseThrow(() -> new ResourceNotFoundException("프로젝트", "ID", projectId));
 
         if (request.getName() != null) {
             project.setName(request.getName());
