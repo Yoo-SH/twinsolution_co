@@ -22,7 +22,7 @@ public class ChatMessageDto {
         private String systemPrompt;
 
         @Schema(description = "사용할 OpenAI 모델 (선택사항, 기본값: gpt-3.5-turbo)",
-                example = "gpt-4",
+                example = "gpt-3.5-turbo",
                 allowableValues = {"gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "gpt-4o"})
         private String model;
 

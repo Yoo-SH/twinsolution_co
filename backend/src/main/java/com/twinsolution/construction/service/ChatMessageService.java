@@ -88,12 +88,16 @@ public class ChatMessageService {
                 .content(request.getContent())
                 .build());
 
-        // OpenAI API 호출
+        // OpenAI API 호출 (기본값 설정)
+        String model = request.getModel() != null ? request.getModel() : "gpt-3.5-turbo";
+        Double temperature = request.getTemperature() != null ? request.getTemperature() : 0.7;
+        Integer maxTokens = request.getMaxTokens() != null ? request.getMaxTokens() : 1000;
+
         OpenAiDto.ChatResponse response = openAiChatClient.sendMessage(
                 messages,
-                request.getModel(),
-                request.getTemperature(),
-                request.getMaxTokens()
+                model,
+                temperature,
+                maxTokens
         );
 
         // 응답 추출

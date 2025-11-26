@@ -195,7 +195,7 @@ public class ProjectController {
                     "{\n" +
                     "  \"content\": \"안녕하세요, 건설 프로젝트에 대해 질문이 있습니다.\",\n" +
                     "  \"systemPrompt\": \"당신은 건설 전문가입니다. 건설, 건축 자재, 안전 규정에 대한 정확한 답변을 제공하세요.\",\n" +
-                    "  \"model\": \"gpt-4\",\n" +
+                    "  \"model\": \"gpt-3.5-turbo\",\n" +
                     "  \"temperature\": 0.7,\n" +
                     "  \"maxTokens\": 1000\n" +
                     "}\n" +
@@ -241,7 +241,7 @@ public class ProjectController {
                                     example = "{\n" +
                                             "  \"content\": \"안녕하세요, 건설 프로젝트에 대해 질문이 있습니다.\",\n" +
                                             "  \"systemPrompt\": \"당신은 건설 전문가입니다.\",\n" +
-                                            "  \"model\": \"gpt-4\",\n" +
+                                            "  \"model\": \"gpt-3.5-turbo\",\n" +
                                             "  \"temperature\": 0.7,\n" +
                                             "  \"maxTokens\": 1000\n" +
                                             "}"
