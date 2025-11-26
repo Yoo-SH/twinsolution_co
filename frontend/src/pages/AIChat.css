@@ -2,7 +2,7 @@
   display: flex;
   width: 100%;
   height: 100vh;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .ai-chat-main {
@@ -11,14 +11,14 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  overflow: hidden;
+  overflow: visible;
   background-color: #ffffff;
 }
 
 .ai-chat-container {
   display: flex;
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .chat-area {
@@ -27,7 +27,7 @@
   flex-direction: column;
   background-color: white;
   padding: 24px 40px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .messages-container {
@@ -90,6 +90,85 @@
   justify-content: center;
   color: var(--text-secondary, #5a5a5a);
   font-weight: 500;
+}
+
+.ai-chat-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.toolbar-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  z-index: 20;
+}
+
+.toolbar-field label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.toolbar-field select {
+  min-width: 260px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d0d5dd;
+  font-size: 14px;
+}
+
+.advanced-settings {
+  margin-bottom: 16px;
+}
+
+.advanced-toggle {
+  border: none;
+  background: none;
+  color: var(--secondary-color);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.advanced-panel {
+  margin-top: 12px;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  padding: 16px;
+  background-color: #f9fafb;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.advanced-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.advanced-field textarea,
+.advanced-field input,
+.advanced-field select {
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  background-color: #ffffff;
+}
+
+.advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.checkbox-field {
+  flex-direction: row;
+  align-items: center;
 }
 
 @media (max-width: 1200px) {

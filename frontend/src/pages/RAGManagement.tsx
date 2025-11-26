@@ -30,6 +30,7 @@ const RAGManagement = () => {
   const isMountedRef = useRef(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
@@ -45,9 +46,10 @@ const RAGManagement = () => {
       if (!isMountedRef.current) return;
 
       setProjects(projectList);
-      if (!selectedProjectId && projectList.length) {
-        setSelectedProjectId(projectList[0].id);
-      }
+      setSelectedProjectId((prev) => {
+        if (prev) return prev;
+        return projectList.length ? projectList[0].id : null;
+      });
     } catch (err) {
       if (!isMountedRef.current) return;
       const message =
@@ -57,7 +59,7 @@ const RAGManagement = () => {
       if (!isMountedRef.current) return;
       setProjectsLoading(false);
     }
-  }, [selectedProjectId]);
+  }, []);
 
   const loadDocuments = useCallback(
     async (projectId: number) => {
@@ -86,6 +88,25 @@ const RAGManagement = () => {
   useEffect(() => {
     loadProjects();
   }, [loadProjects]);
+
+  useEffect(() => {
+    const handleProjectCreated = (event: Event) => {
+      const newProject = (event as CustomEvent<Project>).detail;
+      setProjects((prev) => {
+        const exists = prev.some((project) => project.id === newProject.id);
+        const updated = exists
+          ? prev.map((project) => (project.id === newProject.id ? newProject : project))
+          : [newProject, ...prev];
+        return updated.slice(0, 20);
+      });
+      setSelectedProjectId(newProject.id);
+    };
+
+    window.addEventListener('project-created', handleProjectCreated as EventListener);
+    return () => {
+      window.removeEventListener('project-created', handleProjectCreated as EventListener);
+    };
+  }, []);
 
   useEffect(() => {
     if (selectedProjectId) {

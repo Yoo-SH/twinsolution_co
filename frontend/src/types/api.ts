@@ -7,16 +7,38 @@ export interface DashboardSummary {
   chatSessionsDelta: number;
 }
 
+export type ProjectStatus = '초기단계' | '승인대기' | '서류검토' | '설계진행' | string;
+
 export interface Project {
   id: number;
   name: string;
   description: string | null;
-  status: string;
-  progress: number;
+  location: string;
+  zoning: string;
+  usage: string;
+  totalFloorArea: number | null;
+  floors: string;
+  parkingSpaces: number | null;
+  status: ProjectStatus;
+  progress: number | null;
   createdAt: string;
   updatedAt: string;
   latestChatSessionAt: string | null;
 }
+
+export interface ProjectRequest {
+  name: string;
+  description?: string | null;
+  location: string;
+  zoning: string;
+  usage: string;
+  totalFloorArea: number;
+  floors: string;
+  parkingSpaces: number;
+  status?: ProjectStatus;
+}
+
+export type ProjectUpdateRequest = Partial<ProjectRequest>;
 
 export type DocumentStatus =
   | '업로드됨'
@@ -102,6 +124,11 @@ export interface ChatMessage {
 
 export interface ChatMessagePayload {
   content: string;
+  systemPrompt?: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  stream?: boolean;
 }
 
 export interface ApiIntegrationItem {
