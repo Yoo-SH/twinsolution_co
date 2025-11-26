@@ -3,6 +3,7 @@ package com.twinsolution.construction.service;
 import com.twinsolution.construction.dto.DocumentChunkDto;
 import com.twinsolution.construction.entity.Document;
 import com.twinsolution.construction.entity.DocumentChunk;
+import com.twinsolution.construction.exception.ResourceNotFoundException;
 import com.twinsolution.construction.repository.DocumentChunkRepository;
 import com.twinsolution.construction.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +32,7 @@ public class DocumentChunkService {
     @Transactional
     public void rebuildChunks(Long documentId) {
         Document document = documentRepository.findById(documentId)
-                .orElseThrow(() -> new RuntimeException("Document not found with id: " + documentId));
+                .orElseThrow(() -> new ResourceNotFoundException("문서", "ID", documentId));
 
         documentChunkRepository.deleteByDocumentId(documentId);
 

@@ -3,6 +3,7 @@ package com.twinsolution.construction.service;
 import com.twinsolution.construction.dto.AnalysisReportDto;
 import com.twinsolution.construction.entity.AnalysisReport;
 import com.twinsolution.construction.entity.Document;
+import com.twinsolution.construction.exception.ResourceNotFoundException;
 import com.twinsolution.construction.repository.AnalysisReportRepository;
 import com.twinsolution.construction.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ public class AnalysisReportService {
     @Transactional
     public AnalysisReportDto.Response createAnalysisReport(Long documentId) {
         Document document = documentRepository.findById(documentId)
-                .orElseThrow(() -> new RuntimeException("Document not found with id: " + documentId));
+                .orElseThrow(() -> new ResourceNotFoundException("문서", "ID", documentId));
 
         // TODO: Implement actual AI analysis logic
         String analysisContent = generateAnalysis(document);
@@ -48,7 +49,7 @@ public class AnalysisReportService {
 
     public AnalysisReportDto.Response getAnalysisReportById(Long documentId, Long reportId) {
         AnalysisReport report = analysisReportRepository.findByDocumentIdAndId(documentId, reportId)
-                .orElseThrow(() -> new RuntimeException("Analysis report not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("분석 리포트", "ID", reportId));
         return convertToResponse(report);
     }
 

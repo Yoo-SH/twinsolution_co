@@ -4,6 +4,7 @@ import com.twinsolution.construction.dto.APIDto;
 import com.twinsolution.construction.dto.APILogDto;
 import com.twinsolution.construction.entity.API;
 import com.twinsolution.construction.entity.APILog;
+import com.twinsolution.construction.exception.ResourceNotFoundException;
 import com.twinsolution.construction.repository.APILogRepository;
 import com.twinsolution.construction.repository.APIRepository;
 import lombok.RequiredArgsConstructor;
@@ -47,14 +48,14 @@ public class APIService {
 
     public APIDto.Response getAPIById(Long apiId) {
         API api = apiRepository.findById(apiId)
-                .orElseThrow(() -> new RuntimeException("API not found with id: " + apiId));
+                .orElseThrow(() -> new ResourceNotFoundException("API", "ID", apiId));
         return convertToResponse(api);
     }
 
     @Transactional
     public APIDto.Response updateAPI(Long apiId, APIDto.Request request) {
         API api = apiRepository.findById(apiId)
-                .orElseThrow(() -> new RuntimeException("API not found with id: " + apiId));
+                .orElseThrow(() -> new ResourceNotFoundException("API", "ID", apiId));
 
         if (request.getName() != null) api.setName(request.getName());
         if (request.getBaseUrl() != null) api.setBaseUrl(request.getBaseUrl());
@@ -68,7 +69,7 @@ public class APIService {
     @Transactional
     public APIDto.Response updateAPIStatus(Long apiId, APIDto.StatusUpdateRequest request) {
         API api = apiRepository.findById(apiId)
-                .orElseThrow(() -> new RuntimeException("API not found with id: " + apiId));
+                .orElseThrow(() -> new ResourceNotFoundException("API", "ID", apiId));
 
         api.setStatus(request.getStatus());
         return convertToResponse(api);
@@ -77,7 +78,7 @@ public class APIService {
     @Transactional
     public APIDto.TestCallResponse testAPICall(Long apiId) {
         API api = apiRepository.findById(apiId)
-                .orElseThrow(() -> new RuntimeException("API not found with id: " + apiId));
+                .orElseThrow(() -> new ResourceNotFoundException("API", "ID", apiId));
 
         try {
             String response = restTemplate.getForObject(api.getBaseUrl(), String.class);

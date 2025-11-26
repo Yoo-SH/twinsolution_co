@@ -3,6 +3,8 @@ package com.twinsolution.construction.service;
 import com.twinsolution.construction.dto.DocumentDto;
 import com.twinsolution.construction.entity.Document;
 import com.twinsolution.construction.entity.Project;
+import com.twinsolution.construction.exception.BadRequestException;
+import com.twinsolution.construction.exception.ResourceNotFoundException;
 import com.twinsolution.construction.repository.AnalysisReportRepository;
 import com.twinsolution.construction.repository.DocumentChunkRepository;
 import com.twinsolution.construction.repository.DocumentRepository;
@@ -37,7 +39,7 @@ public class DocumentService {
     @Transactional
     public DocumentDto.Response uploadDocument(Long projectId, MultipartFile file) throws IOException {
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
+                .orElseThrow(() -> new ResourceNotFoundException("프로젝트", "ID", projectId));
 
         String originalFilename = file.getOriginalFilename();
         String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
@@ -71,7 +73,7 @@ public class DocumentService {
     @Transactional
     public DocumentDto.Response createGeneratedDocument(DocumentDto.Request request) {
         Project project = projectRepository.findById(request.getProjectId())
-                .orElseThrow(() -> new RuntimeException("Project not found with id: " + request.getProjectId()));
+                .orElseThrow(() -> new ResourceNotFoundException("프로젝트", "ID", request.getProjectId()));
 
         Document document = Document.builder()
                 .project(project)
@@ -95,14 +97,14 @@ public class DocumentService {
 
     public DocumentDto.Response getDocumentById(Long documentId) {
         Document document = documentRepository.findById(documentId)
-                .orElseThrow(() -> new RuntimeException("Document not found with id: " + documentId));
+                .orElseThrow(() -> new ResourceNotFoundException("문서", "ID", documentId));
         return convertToResponse(document);
     }
 
     @Transactional
     public void deleteDocument(Long documentId) {
         Document document = documentRepository.findById(documentId)
-                .orElseThrow(() -> new RuntimeException("Document not found with id: " + documentId));
+                .orElseThrow(() -> new ResourceNotFoundException("문서", "ID", documentId));
 
         try {
             Path filePath = Paths.get(document.getFilePath());
