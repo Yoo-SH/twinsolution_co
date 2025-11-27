@@ -13,10 +13,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Tag(name = "프로젝트 관리", description = "건설 프로젝트를 관리하는 API입니다. 프로젝트 생성, 조회, 수정, 삭제 및 프로젝트별 AI 챗봇 대화 기능을 제공합니다.")
 @RestController
@@ -206,13 +210,16 @@ public class ProjectController {
                     "- model (선택): OpenAI 모델 (기본값: gpt-3.5-turbo)\n" +
                     "- temperature (선택): 0.0~2.0, 낮을수록 일관적, 높을수록 창의적 (기본값: 0.7)\n" +
                     "- maxTokens (선택): 응답의 최대 토큰 수\n" +
-                    "- stream (선택): 스트리밍 모드 (현재 미지원, 향후 추가 예정)"
+                    "- stream (선택): 스트리밍 모드 활성화 (기본값: false)\n" +
+                    "  - false: 전체 응답을 JSON으로 반환 (application/json)\n" +
+                    "  - true: 응답을 실시간으로 스트리밍 (text/event-stream)"
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "201",
                     description = "메시지 전송 및 AI 응답 생성 성공\n\n" +
-                            "응답에는 AI가 생성한 메시지가 포함되며, 사용된 모델과 토큰 정보는 로그에 기록됩니다.",
+                            "- stream=false: JSON 형식으로 전체 응답 반환\n" +
+                            "- stream=true: Server-Sent Events로 실시간 스트리밍",
                     content = @Content(schema = @Schema(implementation = ChatMessageDto.Response.class))
             ),
             @ApiResponse(responseCode = "404", description = "해당 프로젝트를 찾을 수 없습니다."),
@@ -220,8 +227,8 @@ public class ProjectController {
             @ApiResponse(responseCode = "401", description = "OpenAI API 인증 실패. API 키를 확인하세요."),
             @ApiResponse(responseCode = "500", description = "OpenAI API 호출 중 오류가 발생했습니다.")
     })
-    @PostMapping("/{projectId}/messages")
-    public ResponseEntity<ChatMessageDto.Response> sendProjectMessage(
+    @PostMapping(value = "/{projectId}/messages", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_EVENT_STREAM_VALUE})
+    public Object sendProjectMessage(
             @Parameter(description = "프로젝트 ID", required = true, example = "1")
             @PathVariable Long projectId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -233,7 +240,7 @@ public class ProjectController {
                             "- model: OpenAI 모델 선택\n" +
                             "- temperature: 응답 창의성 조절\n" +
                             "- maxTokens: 최대 토큰 수\n" +
-                            "- stream: 스트리밍 모드 (미지원)",
+                            "- stream: 스트리밍 모드 (true/false)",
                     required = true,
                     content = @Content(
                             schema = @Schema(
@@ -251,6 +258,14 @@ public class ProjectController {
             @RequestBody ChatMessageDto.Request request) {
 
         Long sessionId = projectService.getOrCreateSessionForProject(projectId);
+
+        // stream 옵션이 true인 경우 스트리밍 응답 반환
+        if (Boolean.TRUE.equals(request.getStream())) {
+            SseEmitter emitter = chatMessageService.sendMessageStreamWithEmitter(sessionId, request);
+            return emitter;
+        }
+
+        // stream 옵션이 false이거나 null인 경우 일반 응답 반환
         ChatMessageDto.Response response = chatMessageService.sendMessage(sessionId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

@@ -6,11 +6,14 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.twinsolution.construction.config.OpenAiProperties;
 import com.twinsolution.construction.dto.OpenAiDto;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -188,14 +191,13 @@ public class OpenAiChatClient {
      * @param model 사용할 OpenAI 모델
      * @param temperature 랜덤성 조절 (0.0 ~ 2.0)
      * @param maxTokens 응답의 최대 토큰 수
-     * @param onChunk 각 스트리밍 청크를 처리할 콜백 함수
+     * @return 스트리밍 응답 Flux
      */
-    public void sendMessageStream(
+    public Flux<String> sendMessageStreamFlux(
             List<OpenAiDto.Message> messages,
             String model,
             Double temperature,
-            Integer maxTokens,
-            Consumer<String> onChunk) {
+            Integer maxTokens) {
 
         try {
             // 스트리밍이 활성화된 요청 본문 생성
@@ -208,52 +210,79 @@ public class OpenAiChatClient {
 
             log.info("OpenAI 스트리밍 요청 전송 중, 모델: {}", model);
 
+            // ObjectMapper 미리 생성
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+
             // 요청 전송 및 응답 스트리밍
-            Flux<String> responseFlux = webClient.post()
+            return webClient.post()
                     .bodyValue(requestBody)
+                    .accept(MediaType.TEXT_EVENT_STREAM)
                     .retrieve()
-                    .bodyToFlux(String.class);
-
-            responseFlux.subscribe(
-                    chunk -> {
+                    .bodyToFlux(String.class)
+                    .flatMap(chunk -> {
                         try {
-                            // SSE 형식 파싱: "data: {...}"
-                            if (chunk.startsWith("data: ")) {
-                                String jsonData = chunk.substring(6).trim();
+                            String trimmedChunk = chunk.trim();
+                            log.debug("Processing chunk: {}", trimmedChunk);
 
-                                // [DONE] 신호 건너뛰기
-                                if ("[DONE]".equals(jsonData)) {
-                                    log.info("OpenAI 스트리밍 완료");
-                                    return;
+                            // 빈 청크나 [DONE] 신호 건너뛰기
+                            if (trimmedChunk.isEmpty() || "[DONE]".equals(trimmedChunk)) {
+                                if ("[DONE]".equals(trimmedChunk)) {
+                                    log.info("OpenAI 스트리밍 [DONE] 신호 수신");
                                 }
+                                return Flux.empty();
+                            }
 
-                                // JSON 청크 파싱
-                                ObjectMapper objectMapper = new ObjectMapper();
-                                objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-                                objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+                            // JSON 청크 파싱
+                            OpenAiDto.StreamResponse streamResponse = objectMapper.readValue(trimmedChunk, OpenAiDto.StreamResponse.class);
 
-                                OpenAiDto.StreamResponse streamResponse = objectMapper.readValue(jsonData, OpenAiDto.StreamResponse.class);
-
-                                // delta에서 content 추출
-                                if (streamResponse.getChoices() != null && !streamResponse.getChoices().isEmpty()) {
-                                    OpenAiDto.StreamChoice choice = streamResponse.getChoices().get(0);
-                                    if (choice.getDelta() != null && choice.getDelta().getContent() != null) {
-                                        onChunk.accept(choice.getDelta().getContent());
-                                    }
+                            // delta에서 content 추출
+                            if (streamResponse.getChoices() != null && !streamResponse.getChoices().isEmpty()) {
+                                OpenAiDto.StreamChoice choice = streamResponse.getChoices().get(0);
+                                if (choice.getDelta() != null && choice.getDelta().getContent() != null) {
+                                    String content = choice.getDelta().getContent();
+                                    log.debug("Content extracted: {}", content);
+                                    return Flux.just(content);
                                 }
                             }
+
+                            return Flux.empty();
                         } catch (Exception e) {
-                            log.error("스트리밍 청크 파싱 오류: {}", e.getMessage());
+                            log.warn("청크 파싱 건너뜀: {}", e.getMessage());
+                            return Flux.empty();
                         }
-                    },
-                    error -> log.error("스트리밍 오류: {}", error.getMessage(), error),
-                    () -> log.debug("스트리밍 완료")
-            );
+                    })
+                    .doOnError(error -> log.error("스트리밍 오류: {}", error.getMessage(), error))
+                    .doOnComplete(() -> log.info("OpenAI 스트리밍 완료"));
 
         } catch (Exception e) {
             log.error("OpenAI 스트리밍 API 호출 오류: {}", e.getMessage(), e);
-            throw new RuntimeException("OpenAI 스트리밍 API 호출 실패: " + e.getMessage(), e);
+            return Flux.error(new RuntimeException("OpenAI 스트리밍 API 호출 실패: " + e.getMessage(), e));
         }
+    }
+
+    /**
+     * 콜백 방식 스트리밍 메서드 (기존 호환성 유지)
+     * @param messages 채팅 메시지 리스트
+     * @param model 사용할 OpenAI 모델
+     * @param temperature 랜덤성 조절 (0.0 ~ 2.0)
+     * @param maxTokens 응답의 최대 토큰 수
+     * @param onChunk 각 스트리밍 청크를 처리할 콜백 함수
+     */
+    public void sendMessageStream(
+            List<OpenAiDto.Message> messages,
+            String model,
+            Double temperature,
+            Integer maxTokens,
+            Consumer<String> onChunk) {
+
+        sendMessageStreamFlux(messages, model, temperature, maxTokens)
+                .subscribe(
+                        onChunk::accept,
+                        error -> log.error("스트리밍 오류: {}", error.getMessage(), error),
+                        () -> log.debug("스트리밍 완료")
+                );
     }
 
     /**
