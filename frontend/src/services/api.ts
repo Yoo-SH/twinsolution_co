@@ -7,7 +7,6 @@ import type {
   ApiTestResponse,
   ChatMessage,
   ChatMessagePayload,
-  ChatSession,
   ChunkPreviewRequest,
   ChunkPreviewResponse,
   DocumentChunk,
@@ -17,12 +16,13 @@ import type {
   DocumentItem,
   DocumentUploadResponse,
   Project,
+  ProjectRequest,
+  ProjectUpdateRequest,
 } from '../types/api';
 
 const DASHBOARD_BASE = '/api/dashboard';
 const PROJECTS_BASE = '/api/projects';
 const DOCUMENTS_BASE = '/api/documents';
-const CHAT_SESSIONS_BASE = '/api/chat-sessions';
 const INTEGRATION_BASE = '/api/integration/apis';
 const SETTINGS_BASE = '/api/settings';
 
@@ -55,32 +55,14 @@ export const rebuildDocumentChunks = (documentId: number) =>
 export const getDocumentChunks = (documentId: number) =>
   apiClient.get<DocumentChunk[]>(`${DOCUMENTS_BASE}/${documentId}/chunks`);
 
-// Chat sessions & messages
-export const getChatSessionsByProject = (projectId: number) =>
-  apiClient.get<ChatSession[]>(`${PROJECTS_BASE}/${projectId}/chat-sessions`);
-
-export const createChatSession = (
-  projectId: number,
-  payload?: { quickQuestion?: string },
-) =>
-  apiClient.post<ChatSession>(
-    `${PROJECTS_BASE}/${projectId}/chat-sessions`,
-    payload ?? {},
-  );
-
-export const getChatSession = (sessionId: number) =>
-  apiClient.get<ChatSession>(`${CHAT_SESSIONS_BASE}/${sessionId}`);
-
-export const getChatMessages = (sessionId: number, page?: number, size?: number) =>
-  apiClient.get<ChatMessage[]>(`${CHAT_SESSIONS_BASE}/${sessionId}/messages`, {
+// Project-based chat
+export const getProjectMessages = (projectId: number, page?: number, size?: number) =>
+  apiClient.get<ChatMessage[]>(`${PROJECTS_BASE}/${projectId}/messages`, {
     query: { page, size },
   });
 
-export const sendChatMessage = (sessionId: number, payload: ChatMessagePayload) =>
-  apiClient.post<ChatMessage>(
-    `${CHAT_SESSIONS_BASE}/${sessionId}/messages`,
-    payload,
-  );
+export const sendProjectMessage = (projectId: number, payload: ChatMessagePayload) =>
+  apiClient.post<ChatMessage>(`${PROJECTS_BASE}/${projectId}/messages`, payload);
 
 // Chunk settings
 export const getChunkSettings = () =>
@@ -119,4 +101,13 @@ export const getApiLogs = (apiId: number, status?: string, limit = 50) =>
 // Projects helpers
 export const getProject = (projectId: number) =>
   apiClient.get<Project>(`${PROJECTS_BASE}/${projectId}`);
+
+export const createProject = (payload: ProjectRequest) =>
+  apiClient.post<Project>(PROJECTS_BASE, payload);
+
+export const updateProject = (projectId: number, payload: ProjectUpdateRequest) =>
+  apiClient.patch<Project>(`${PROJECTS_BASE}/${projectId}`, payload);
+
+export const deleteProject = (projectId: number) =>
+  apiClient.delete<void>(`${PROJECTS_BASE}/${projectId}`);
 

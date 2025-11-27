@@ -7,6 +7,7 @@ const Sidebar = () => {
   const mainMenuItems = [
     { path: '/', label: '대시보드', icon: '📊' },
     { path: '/documents', label: '서류작성 AI', icon: '📄' },
+    { path: '/projects/new', label: '프로젝트 생성', icon: '🏗️' },
   ];
 
   const ragMenuItems = [

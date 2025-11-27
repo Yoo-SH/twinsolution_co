@@ -46,12 +46,16 @@ const ProjectTable = ({
 const getStatusClass = (status: string) => {
   switch (status) {
     case '승인 대기':
+    case '승인대기':
       return 'status-pending';
     case '서류 검토':
+    case '서류검토':
     case '설계 진행':
+    case '설계진행':
     case '진행중':
       return 'status-progress';
     case '초기 단계':
+    case '초기단계':
       return 'status-initial';
     case '완료':
       return 'status-completed';

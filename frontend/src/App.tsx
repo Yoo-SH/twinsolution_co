@@ -5,6 +5,7 @@ import AIChat from './pages/AIChat';
 import RAGManagement from './pages/RAGManagement';
 import APIIntegration from './pages/APIIntegration';
 import ChunkingSettings from './pages/ChunkingSettings';
+import ProjectCreate from './pages/ProjectCreate';
 import './App.css';
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
         <Route path="/chunking" element={<ChunkingSettings />} />
         <Route path="/api" element={<APIIntegration />} />
         <Route path="/history" element={<History />} />
+        <Route path="/projects/new" element={<ProjectCreate />} />
       </Routes>
     </Router>
   );

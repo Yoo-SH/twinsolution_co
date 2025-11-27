@@ -5,23 +5,11 @@ import StatCard from '../components/StatCard';
 import SearchBar from '../components/SearchBar';
 import FilterDropdown from '../components/FilterDropdown';
 import HistoryCard from '../components/HistoryCard';
-import {
-  getChatMessages,
-  getChatSessionsByProject,
-  getProjectDocuments,
-  getRecentProjects,
-} from '../services/api';
-import type { ChatMessage, ChatSession, DocumentItem, Project } from '../types/api';
+import { getProjectDocuments, getProjectMessages, getRecentProjects } from '../services/api';
+import type { ChatMessage, DocumentItem, Project } from '../types/api';
 import './History.css';
 
 const FILTER_OPTIONS = ['전체', '최근 7일', '최근 30일', '최근 90일'];
-const MAX_SESSIONS = 10;
-
-interface SessionSummary {
-  session: ChatSession;
-  messageCount: number;
-  lastMessage?: ChatMessage;
-}
 
 const History = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,18 +17,24 @@ const History = () => {
   const [activeTab, setActiveTab] = useState<'대화 내역' | '생성된 서류'>('대화 내역');
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
-  const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [generatedDocuments, setGeneratedDocuments] = useState<DocumentItem[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
-  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [messageLoading, setMessageLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isMountedRef = useRef(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
   }, []);
+
+  const selectedProject = useMemo(
+    () => projects.find((project) => project.id === selectedProjectId) ?? null,
+    [projects, selectedProjectId],
+  );
 
   const loadProjects = useCallback(async () => {
     if (!isMountedRef.current) return;
@@ -51,9 +45,10 @@ const History = () => {
       const list = await getRecentProjects(20);
       if (!isMountedRef.current) return;
       setProjects(list);
-      if (!selectedProjectId && list.length) {
-        setSelectedProjectId(list[0].id);
-      }
+      setSelectedProjectId((prev) => {
+        if (prev) return prev;
+        return list.length ? list[0].id : null;
+      });
     } catch (err) {
       if (!isMountedRef.current) return;
       const message =
@@ -63,44 +58,28 @@ const History = () => {
       if (!isMountedRef.current) return;
       setProjectsLoading(false);
     }
-  }, [selectedProjectId]);
+  }, []);
 
-  const loadSessions = useCallback(
-    async (projectId: number) => {
+  const loadMessages = useCallback(async (projectId: number) => {
+    if (!isMountedRef.current) return;
+    setMessageLoading(true);
+    setError(null);
+
+    try {
+      const history = await getProjectMessages(projectId);
       if (!isMountedRef.current) return;
-      setSessionsLoading(true);
-      setError(null);
-
-      try {
-        const sessionList = await getChatSessionsByProject(projectId);
-        const limited = sessionList.slice(0, MAX_SESSIONS);
-
-        const summaries = await Promise.all(
-          limited.map(async (session) => {
-            const messages = await getChatMessages(session.id);
-            return {
-              session,
-              messageCount: messages.length,
-              lastMessage: messages[messages.length - 1],
-            } as SessionSummary;
-          }),
-        );
-
-        if (!isMountedRef.current) return;
-        setSessions(summaries);
-      } catch (err) {
-        if (!isMountedRef.current) return;
-        const message =
-          err instanceof Error ? err.message : '대화 내역을 불러오지 못했습니다.';
-        setError(message);
-        setSessions([]);
-      } finally {
-        if (!isMountedRef.current) return;
-        setSessionsLoading(false);
-      }
-    },
-    [],
-  );
+      setMessages(history);
+    } catch (err) {
+      if (!isMountedRef.current) return;
+      const message =
+        err instanceof Error ? err.message : '대화 내역을 불러오지 못했습니다.';
+      setError(message);
+      setMessages([]);
+    } finally {
+      if (!isMountedRef.current) return;
+      setMessageLoading(false);
+    }
+  }, []);
 
   const loadGeneratedDocuments = useCallback(async (projectId: number) => {
     if (!isMountedRef.current) return;
@@ -122,18 +101,34 @@ const History = () => {
   }, [loadProjects]);
 
   useEffect(() => {
+    const handleProjectCreated = (event: Event) => {
+      const newProject = (event as CustomEvent<Project>).detail;
+      setProjects((prev) => {
+        const exists = prev.some((project) => project.id === newProject.id);
+        const updated = exists
+          ? prev.map((project) => (project.id === newProject.id ? newProject : project))
+          : [newProject, ...prev];
+        return updated.slice(0, 20);
+      });
+      setSelectedProjectId(newProject.id);
+      loadMessages(newProject.id);
+      loadGeneratedDocuments(newProject.id);
+    };
+
+    window.addEventListener('project-created', handleProjectCreated as EventListener);
+    return () => {
+      window.removeEventListener('project-created', handleProjectCreated as EventListener);
+    };
+  }, [loadMessages, loadGeneratedDocuments]);
+
+  useEffect(() => {
     if (selectedProjectId) {
-      loadSessions(selectedProjectId);
+      loadMessages(selectedProjectId);
       loadGeneratedDocuments(selectedProjectId);
     }
-  }, [selectedProjectId, loadSessions, loadGeneratedDocuments]);
+  }, [selectedProjectId, loadMessages, loadGeneratedDocuments]);
 
-  const selectedProject = useMemo(
-    () => projects.find((project) => project.id === selectedProjectId) ?? null,
-    [projects, selectedProjectId],
-  );
-
-  const filteredSessions = useMemo(() => {
+  const filteredConversations = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
     const now = Date.now();
 
@@ -146,42 +141,49 @@ const History = () => {
         ? 90
         : null;
 
-    return sessions.filter(({ session, lastMessage }) => {
+    const conversations = [];
+    for (let i = 0; i < messages.length; i += 1) {
+      const userMessage = messages[i];
+      if (userMessage.role === 'assistant') continue;
+      const assistantMessage =
+        i + 1 < messages.length && messages[i + 1].role === 'assistant'
+          ? messages[i + 1]
+          : undefined;
+
       const matchesQuery = normalizedQuery
-        ? session.quickQuestion?.toLowerCase().includes(normalizedQuery) ||
-          lastMessage?.content.toLowerCase().includes(normalizedQuery)
+        ? userMessage.content.toLowerCase().includes(normalizedQuery) ||
+          assistantMessage?.content.toLowerCase().includes(normalizedQuery)
         : true;
 
-      const matchesRange = rangeDays
-        ? (() => {
-            const updatedAt = new Date(session.updatedAt ?? session.createdAt).getTime();
-            return now - updatedAt <= rangeDays * 24 * 60 * 60 * 1000;
-          })()
-        : true;
+      const updatedAt = new Date(userMessage.createdAt).getTime();
+      const matchesRange = rangeDays ? now - updatedAt <= rangeDays * 24 * 60 * 60 * 1000 : true;
 
-      return matchesQuery && matchesRange;
-    });
-  }, [sessions, searchQuery, filterValue]);
+      if (!matchesQuery || !matchesRange) continue;
+
+      conversations.push({
+        id: userMessage.id,
+        userMessage,
+        assistantMessage,
+      });
+    }
+
+    return conversations;
+  }, [messages, searchQuery, filterValue]);
 
   const stats = useMemo(() => {
-    const totalMessages = sessions.reduce((sum, item) => sum + item.messageCount, 0);
-    const latestSession = [...sessions].sort(
-      (a, b) =>
-        new Date(b.session.updatedAt ?? b.session.createdAt).getTime() -
-        new Date(a.session.updatedAt ?? a.session.createdAt).getTime(),
-    )[0];
+    const latestMessage = messages[messages.length - 1];
 
     return [
       {
         title: '전체 대화',
-        value: sessions.length,
+        value: filteredConversations.length,
         trend: selectedProject ? selectedProject.name : '',
         icon: '💬',
         iconColor: 'rgba(200, 200, 200, 0.3)',
       },
       {
         title: '총 메시지',
-        value: totalMessages,
+        value: messages.length,
         trend: '',
         icon: '✉️',
         iconColor: 'rgba(123, 104, 238, 0.2)',
@@ -195,10 +197,8 @@ const History = () => {
       },
       {
         title: '최근 업데이트',
-        value: latestSession
-          ? new Date(
-              latestSession.session.updatedAt ?? latestSession.session.createdAt,
-            ).toLocaleString('ko-KR', {
+        value: latestMessage
+          ? new Date(latestMessage.createdAt).toLocaleString('ko-KR', {
               month: '2-digit',
               day: '2-digit',
               hour: '2-digit',
@@ -210,7 +210,7 @@ const History = () => {
         iconColor: 'rgba(255, 182, 193, 0.3)',
       },
     ];
-  }, [sessions, selectedProject, generatedDocuments]);
+  }, [filteredConversations.length, generatedDocuments.length, messages, selectedProject]);
 
   return (
     <div className="history-layout">
@@ -225,7 +225,7 @@ const History = () => {
                 <button
                   type="button"
                   className="history-retry-button"
-                  onClick={() => loadSessions(selectedProjectId)}
+                  onClick={() => loadMessages(selectedProjectId)}
                 >
                   다시 시도
                 </button>
@@ -269,8 +269,8 @@ const History = () => {
             <button
               type="button"
               className="refresh-button"
-              disabled={!selectedProjectId || sessionsLoading}
-              onClick={() => selectedProjectId && loadSessions(selectedProjectId)}
+              disabled={!selectedProjectId || messageLoading}
+              onClick={() => selectedProjectId && loadMessages(selectedProjectId)}
             >
               새로고침
             </button>
@@ -283,7 +283,7 @@ const History = () => {
                 onClick={() => setActiveTab('대화 내역')}
               >
                 대화 내역
-                <span className="tab-badge">{sessions.length}</span>
+                <span className="tab-badge">{filteredConversations.length}</span>
               </button>
               <button
                 className={`tab ${activeTab === '생성된 서류' ? 'active' : ''}`}
@@ -311,7 +311,7 @@ const History = () => {
                 <SearchBar
                   value={searchQuery}
                   onChange={setSearchQuery}
-                  placeholder="세션 검색"
+                  placeholder="대화 검색"
                 />
                 <FilterDropdown
                   value={filterValue}
@@ -321,23 +321,25 @@ const History = () => {
               </section>
 
               <section className="conversations-section">
-                {sessionsLoading ? (
+                {messageLoading ? (
                   <div className="history-loading">대화를 불러오는 중입니다...</div>
-                ) : filteredSessions.length ? (
-                  filteredSessions.map((item) => (
+                ) : filteredConversations.length ? (
+                  filteredConversations.map(({ id, userMessage, assistantMessage }) => (
                     <HistoryCard
-                      key={item.session.id}
+                      key={id}
                       title={
-                        item.session.quickQuestion
-                          ? item.session.quickQuestion
-                          : `대화 세션 #${item.session.id}`
+                        userMessage.content.length > 40
+                          ? `${userMessage.content.slice(0, 40)}...`
+                          : userMessage.content
                       }
                       description={
-                        item.lastMessage?.content ?? '최근 메시지가 아직 없습니다.'
+                        assistantMessage
+                          ? assistantMessage.content.length > 80
+                            ? `${assistantMessage.content.slice(0, 80)}...`
+                            : assistantMessage.content
+                          : 'AI 응답이 아직 없습니다.'
                       }
-                      date={new Date(
-                        item.session.updatedAt ?? item.session.createdAt,
-                      ).toLocaleString('ko-KR', {
+                      date={new Date(userMessage.createdAt).toLocaleString('ko-KR', {
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit',
@@ -345,10 +347,10 @@ const History = () => {
                         minute: '2-digit',
                       })}
                       project={selectedProject?.name ?? '프로젝트 미지정'}
-                      messageCount={item.messageCount}
-                      onPlay={() => console.log('Play:', item.session.id)}
-                      onEdit={() => console.log('Edit:', item.session.id)}
-                      onDelete={() => console.log('Delete:', item.session.id)}
+                      messageCount={assistantMessage ? 2 : 1}
+                      onPlay={() => console.log('Play:', id)}
+                      onEdit={() => console.log('Edit:', id)}
+                      onDelete={() => console.log('Delete:', id)}
                     />
                   ))
                 ) : (
