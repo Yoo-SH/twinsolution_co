@@ -190,7 +190,6 @@ public class ChatMessageService {
      * @param request 채팅 메시지 요청
      * @return SseEmitter
      */
-    @Transactional
     public SseEmitter sendMessageStreamWithEmitter(Long sessionId, ChatMessageDto.Request request) {
         ChatSession session = chatSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("채팅 세션", "ID", sessionId));
