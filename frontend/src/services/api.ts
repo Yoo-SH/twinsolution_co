@@ -18,6 +18,11 @@ import type {
   Project,
   ProjectRequest,
   ProjectUpdateRequest,
+  ChatSessionRequest,
+  ChatSessionResponse,
+  QuickQuestionRequest,
+  GeneratedDocumentRequest,
+  AnalysisReportResponse,
 } from '../types/api';
 
 const DASHBOARD_BASE = '/api/dashboard';
@@ -25,6 +30,7 @@ const PROJECTS_BASE = '/api/projects';
 const DOCUMENTS_BASE = '/api/documents';
 const INTEGRATION_BASE = '/api/integration/apis';
 const SETTINGS_BASE = '/api/settings';
+const CHAT_SESSIONS_BASE = '/api/chat-sessions';
 
 // Dashboard
 export const getDashboardSummary = () =>
@@ -110,4 +116,34 @@ export const updateProject = (projectId: number, payload: ProjectUpdateRequest) 
 
 export const deleteProject = (projectId: number) =>
   apiClient.delete<void>(`${PROJECTS_BASE}/${projectId}`);
+
+// Chat Sessions
+export const createChatSession = (projectId: number, payload?: ChatSessionRequest) =>
+  apiClient.post<ChatSessionResponse>(`${PROJECTS_BASE}/${projectId}/chat-sessions`, payload);
+
+export const getChatSessionsByProject = (projectId: number) =>
+  apiClient.get<ChatSessionResponse[]>(`${PROJECTS_BASE}/${projectId}/chat-sessions`);
+
+export const getChatSession = (sessionId: number) =>
+  apiClient.get<ChatSessionResponse>(`${CHAT_SESSIONS_BASE}/${sessionId}`);
+
+export const updateQuickQuestions = (sessionId: number, payload: QuickQuestionRequest) =>
+  apiClient.put<ChatSessionResponse>(`${CHAT_SESSIONS_BASE}/${sessionId}/quick-questions`, payload);
+
+export const createGeneratedDocuments = (sessionId: number, payload: GeneratedDocumentRequest) =>
+  apiClient.post<DocumentItem[]>(`${CHAT_SESSIONS_BASE}/${sessionId}/generated-documents`, payload);
+
+// Document Analysis Reports
+export const createAnalysisReport = (documentId: number) =>
+  apiClient.post<AnalysisReportResponse>(`${DOCUMENTS_BASE}/${documentId}/analysis`);
+
+export const getAnalysisReports = (documentId: number) =>
+  apiClient.get<AnalysisReportResponse[]>(`${DOCUMENTS_BASE}/${documentId}/analysis`);
+
+export const getAnalysisReport = (documentId: number, reportId: number) =>
+  apiClient.get<AnalysisReportResponse>(`${DOCUMENTS_BASE}/${documentId}/analysis/${reportId}`);
+
+// Document details
+export const getDocument = (documentId: number) =>
+  apiClient.get<DocumentItem>(`${DOCUMENTS_BASE}/${documentId}`);
 

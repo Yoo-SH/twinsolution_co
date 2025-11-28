@@ -18,15 +18,22 @@ public class DashboardService {
 
     public DashboardDto.SummaryResponse getDashboardSummary() {
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+        // LocalDateTime.MIN 대신 충분히 오래된 날짜 사용 (2000년 1월 1일)
+        LocalDateTime veryOldDate = LocalDateTime.of(2000, 1, 1, 0, 0);
 
-        long totalDocuments = documentService.countDocumentsCreatedAfter(LocalDateTime.MIN);
+        long totalDocuments = documentService.countDocumentsCreatedAfter(veryOldDate);
         long documentsLastMonth = documentService.countDocumentsCreatedAfter(thirtyDaysAgo);
         int documentsDelta = calculateDelta(totalDocuments, documentsLastMonth);
 
-        long inProgressProjects = projectService.countProjectsByStatus("진행중");
+        // 진행 중인 프로젝트: "설계 진행", "서류 검토", "승인 대기"
+        long inProgressProjects = projectService.countProjectsByStatus("설계 진행")
+                + projectService.countProjectsByStatus("서류 검토")
+                + projectService.countProjectsByStatus("승인 대기");
+
+        // 완료된 프로젝트: "완료" 상태
         long completedProjects = projectService.countProjectsByStatus("완료");
 
-        long totalChatSessions = chatSessionService.countSessionsCreatedAfter(LocalDateTime.MIN);
+        long totalChatSessions = chatSessionService.countSessionsCreatedAfter(veryOldDate);
         long chatSessionsLastMonth = chatSessionService.countSessionsCreatedAfter(thirtyDaysAgo);
         int chatSessionsDelta = calculateDelta(totalChatSessions, chatSessionsLastMonth);
 

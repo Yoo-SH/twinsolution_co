@@ -114,6 +114,30 @@ export interface ChatSession {
   updatedAt: string;
 }
 
+export interface ChatSessionRequest {
+  projectId?: number;
+}
+
+export interface ChatSessionResponse {
+  id: number;
+  projectId: number;
+  quickQuestion: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QuickQuestionRequest {
+  quickQuestions: string[];
+}
+
+export interface GeneratedDocumentRequest {
+  documents: {
+    name: string;
+    content: string;
+    fileType: string;
+  }[];
+}
+
 export interface ChatMessage {
   id: number;
   sessionId: number;
@@ -168,5 +192,16 @@ export interface ApiLogItem {
   statusCode: number;
   message: string;
   createdAt: string;
+}
+
+export interface AnalysisReportResponse {
+  id: number;
+  documentId: number;
+  reportType: string;
+  content: string;
+  summary: string | null;
+  keywords: string[] | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
