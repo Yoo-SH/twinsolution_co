@@ -47,7 +47,7 @@ logging:
 
 # OpenAI Configuration
 openai:
-  api-key: ${OPENAI_API_KEY:your-api-key-here}
+  api-key: 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
   model: gpt-3.5-turbo
   max-tokens: 2000
   temperature: 0.7
