@@ -35,6 +35,7 @@ const AIChat = () => {
   });
 
   const isMountedRef = useRef(true);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -42,6 +43,11 @@ const AIChat = () => {
       isMountedRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!messagesContainerRef.current) return;
+    messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+  }, [messages.length]);
 
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === selectedProjectId) ?? null,
@@ -327,7 +333,7 @@ const AIChat = () => {
                 </button>
               </div>
             )}
-            <div className="messages-container">
+            <div className="messages-container" ref={messagesContainerRef}>
               {messagesLoading ? (
                 <div className="chat-loading">대화를 불러오는 중입니다...</div>
               ) : (
