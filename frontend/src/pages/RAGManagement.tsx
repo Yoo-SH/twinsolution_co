@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import StatCard from '../components/StatCard';
@@ -6,13 +6,10 @@ import FileUpload from '../components/FileUpload';
 import DocumentTable from '../components/DocumentTable';
 import SearchBar from '../components/SearchBar';
 import FilterDropdown from '../components/FilterDropdown';
-import {
-  deleteDocument,
-  getProjectDocuments,
-  getRecentProjects,
-  uploadDocument,
-} from '../services/api';
-import type { DocumentItem, Project } from '../types/api';
+import { deleteDocument, uploadDocument } from '../services/api';
+import { useProjects } from '../hooks/useProjects';
+import { useDocuments } from '../hooks/useDocuments';
+import type { Project } from '../types/api';
 import './RAGManagement.css';
 
 const STATUS_FILTERS = ['전체 상태', '업로드됨', '분석완료'];
@@ -20,74 +17,31 @@ const STATUS_FILTERS = ['전체 상태', '업로드됨', '분석완료'];
 const RAGManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState(STATUS_FILTERS[0]);
-  const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
-  const [documentsLoading, setDocumentsLoading] = useState(false);
-  const [projectsLoading, setProjectsLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const isMountedRef = useRef(true);
+
+  const {
+    projects,
+    loading: projectsLoading,
+    error: projectsError,
+    setProjects,
+  } = useProjects(20);
+
+  const {
+    documents,
+    loading: documentsLoading,
+    error: documentsError,
+    refetch: refetchDocuments,
+    setDocuments,
+  } = useDocuments(selectedProjectId);
+
+  const error = projectsError || documentsError;
 
   useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  const loadProjects = useCallback(async () => {
-    if (!isMountedRef.current) return;
-    setProjectsLoading(true);
-    setError(null);
-
-    try {
-      const projectList = await getRecentProjects(20);
-      if (!isMountedRef.current) return;
-
-      setProjects(projectList);
-      setSelectedProjectId((prev) => {
-        if (prev) return prev;
-        return projectList.length ? projectList[0].id : null;
-      });
-    } catch (err) {
-      if (!isMountedRef.current) return;
-      const message =
-        err instanceof Error ? err.message : '프로젝트 목록을 불러오지 못했습니다.';
-      setError(message);
-    } finally {
-      if (!isMountedRef.current) return;
-      setProjectsLoading(false);
+    if (projects.length > 0 && !selectedProjectId) {
+      setSelectedProjectId(projects[0].id);
     }
-  }, []);
-
-  const loadDocuments = useCallback(
-    async (projectId: number) => {
-      if (!isMountedRef.current) return;
-      setDocumentsLoading(true);
-      setError(null);
-
-      try {
-        const items = await getProjectDocuments(projectId);
-        if (!isMountedRef.current) return;
-        setDocuments(items);
-      } catch (err) {
-        if (!isMountedRef.current) return;
-        const message =
-          err instanceof Error ? err.message : '문서를 불러오지 못했습니다.';
-        setError(message);
-        setDocuments([]);
-      } finally {
-        if (!isMountedRef.current) return;
-        setDocumentsLoading(false);
-      }
-    },
-    [],
-  );
-
-  useEffect(() => {
-    loadProjects();
-  }, [loadProjects]);
+  }, [projects, selectedProjectId]);
 
   useEffect(() => {
     const handleProjectCreated = (event: Event) => {
@@ -106,13 +60,7 @@ const RAGManagement = () => {
     return () => {
       window.removeEventListener('project-created', handleProjectCreated as EventListener);
     };
-  }, []);
-
-  useEffect(() => {
-    if (selectedProjectId) {
-      loadDocuments(selectedProjectId);
-    }
-  }, [selectedProjectId, loadDocuments]);
+  }, [setProjects]);
 
   const filteredDocuments = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -170,19 +118,15 @@ const RAGManagement = () => {
     }
 
     setUploading(true);
-    setError(null);
 
     try {
       const uploaded = await uploadDocument(selectedProjectId, file);
-      if (!isMountedRef.current) return;
       setDocuments((prev) => [uploaded, ...prev]);
     } catch (err) {
-      if (!isMountedRef.current) return;
       const message =
         err instanceof Error ? err.message : '문서를 업로드하지 못했습니다.';
-      setError(message);
+      alert(message);
     } finally {
-      if (!isMountedRef.current) return;
       setUploading(false);
     }
   };
@@ -194,13 +138,11 @@ const RAGManagement = () => {
 
     try {
       await deleteDocument(id);
-      if (!isMountedRef.current) return;
       setDocuments((prev) => prev.filter((doc) => doc.id !== id));
     } catch (err) {
-      if (!isMountedRef.current) return;
       const message =
         err instanceof Error ? err.message : '문서를 삭제하지 못했습니다.';
-      setError(message);
+      alert(message);
     }
   };
 
@@ -225,7 +167,7 @@ const RAGManagement = () => {
                 <button
                   type="button"
                   className="rag-retry-button"
-                  onClick={() => loadDocuments(selectedProjectId)}
+                  onClick={refetchDocuments}
                 >
                   다시 시도
                 </button>
@@ -270,7 +212,7 @@ const RAGManagement = () => {
               type="button"
               className="refresh-button"
               disabled={!selectedProjectId || documentsLoading}
-              onClick={() => selectedProjectId && loadDocuments(selectedProjectId)}
+              onClick={refetchDocuments}
             >
               새로고침
             </button>
