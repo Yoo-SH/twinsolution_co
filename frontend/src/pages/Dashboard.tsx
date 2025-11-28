@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import StatCard from '../components/StatCard';
 import ChartCard from '../components/ChartCard';
 import ProjectTable from '../components/ProjectTable';
 import ActionCard from '../components/ActionCard';
-import { getDashboardSummary, getRecentProjects } from '../services/api';
-import type { DashboardSummary, Project } from '../types/api';
+import { useDashboard } from '../hooks/useDashboard';
 import './Dashboard.css';
 
 const actions = [
@@ -39,86 +38,45 @@ const formatDelta = (value?: number | null) => {
 };
 
 const Dashboard = () => {
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const [projectLoading, setProjectLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const isMountedRef = useRef(true);
+  const { summary, projects, loading, error, refetch } = useDashboard();
 
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  const loadDashboard = useCallback(async () => {
-    if (!isMountedRef.current) return;
-
-    setSummaryLoading(true);
-    setProjectLoading(true);
-    setError(null);
-
-    try {
-      const [summaryData, projectData] = await Promise.all([
-        getDashboardSummary(),
-        getRecentProjects(4),
-      ]);
-
-      if (!isMountedRef.current) return;
-
-      setSummary(summaryData);
-      setProjects(projectData);
-    } catch (err) {
-      if (!isMountedRef.current) return;
-      const message =
-        err instanceof Error ? err.message : '대시보드 데이터를 불러오지 못했습니다.';
-      setError(message);
-    } finally {
-      if (!isMountedRef.current) return;
-      setSummaryLoading(false);
-      setProjectLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadDashboard();
-  }, [loadDashboard]);
-
-  const stats = [
-    {
-      title: '전체 문서',
-      value: summaryLoading ? '...' : summary?.totalDocuments ?? 0,
-      trend: summaryLoading
-        ? '불러오는 중'
-        : `최근 30일 대비 ${formatDelta(summary?.documentsDelta)}`,
-      icon: '📄',
-      iconColor: 'rgba(27, 38, 59, 0.2)',
-    },
-    {
-      title: '진행 중 프로젝트',
-      value: summaryLoading ? '...' : summary?.inProgressProjects ?? 0,
-      trend: '실시간 집계',
-      icon: '⏰',
-      iconColor: 'rgba(237, 197, 49, 0.2)',
-    },
-    {
-      title: '완료된 프로젝트',
-      value: summaryLoading ? '...' : summary?.completedProjects ?? 0,
-      trend: '실시간 집계',
-      icon: '✅',
-      iconColor: 'rgba(76, 175, 80, 0.2)',
-    },
-    {
-      title: '대화 세션',
-      value: summaryLoading ? '...' : summary?.chatSessionsCount ?? 0,
-      trend: summaryLoading
-        ? '불러오는 중'
-        : `최근 30일 대비 ${formatDelta(summary?.chatSessionsDelta)}`,
-      icon: '💬',
-      iconColor: 'rgba(123, 104, 238, 0.2)',
-    },
-  ];
+  const stats = useMemo(
+    () => [
+      {
+        title: '전체 문서',
+        value: loading ? '...' : summary?.totalDocuments ?? 0,
+        trend: loading
+          ? '불러오는 중'
+          : `최근 30일 대비 ${formatDelta(summary?.documentsDelta)}`,
+        icon: '📄',
+        iconColor: 'rgba(27, 38, 59, 0.2)',
+      },
+      {
+        title: '진행 중 프로젝트',
+        value: loading ? '...' : summary?.inProgressProjects ?? 0,
+        trend: '실시간 집계',
+        icon: '⏰',
+        iconColor: 'rgba(237, 197, 49, 0.2)',
+      },
+      {
+        title: '완료된 프로젝트',
+        value: loading ? '...' : summary?.completedProjects ?? 0,
+        trend: '실시간 집계',
+        icon: '✅',
+        iconColor: 'rgba(76, 175, 80, 0.2)',
+      },
+      {
+        title: '대화 세션',
+        value: loading ? '...' : summary?.chatSessionsCount ?? 0,
+        trend: loading
+          ? '불러오는 중'
+          : `최근 30일 대비 ${formatDelta(summary?.chatSessionsDelta)}`,
+        icon: '💬',
+        iconColor: 'rgba(123, 104, 238, 0.2)',
+      },
+    ],
+    [loading, summary],
+  );
 
   return (
     <div className="dashboard-layout">
@@ -129,7 +87,7 @@ const Dashboard = () => {
           {error && (
             <div className="dashboard-error">
               <span>{error}</span>
-              <button type="button" className="retry-button" onClick={loadDashboard}>
+              <button type="button" className="retry-button" onClick={refetch}>
                 다시 시도
               </button>
             </div>
@@ -155,7 +113,7 @@ const Dashboard = () => {
 
           <ProjectTable
             projects={projects}
-            loading={projectLoading}
+            loading={loading}
             emptyMessage={error ? '프로젝트 데이터를 불러오지 못했습니다.' : undefined}
           />
 
