@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import StatCard from '../components/StatCard';
@@ -6,49 +6,16 @@ import APICard from '../components/APICard';
 import {
   createApi,
   deleteApi,
-  getApis,
   testApi,
   updateApi,
   updateApiStatus,
 } from '../services/api';
+import { useApis } from '../hooks/useApis';
 import type { ApiIntegrationItem } from '../types/api';
 import './APIIntegration.css';
 
 const APIIntegration = () => {
-  const [apis, setApis] = useState<ApiIntegrationItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const isMountedRef = useRef(true);
-
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  const loadApis = useCallback(async () => {
-    if (!isMountedRef.current) return;
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await getApis();
-      if (!isMountedRef.current) return;
-      setApis(data);
-    } catch (err) {
-      if (!isMountedRef.current) return;
-      const message =
-        err instanceof Error ? err.message : 'API 목록을 불러오지 못했습니다.';
-      setError(message);
-    } finally {
-      if (!isMountedRef.current) return;
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadApis();
-  }, [loadApis]);
+  const { apis, loading, error, loadApis } = useApis();
 
   const stats = useMemo(() => {
     const total = apis.length;

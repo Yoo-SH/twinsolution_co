@@ -1,17 +1,14 @@
 .header {
-  height: 80px;
+  min-height: 80px;
   background-color: white;
-  padding: 0 40px;
+  padding: 16px 32px;
   display: flex;
   align-items: center;
   border-bottom: 1px solid var(--border-color);
-  position: sticky;
-  top: 0;
-  z-index: 10;
 }
 
 .header-title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
   color: var(--text-primary);
   margin: 0;

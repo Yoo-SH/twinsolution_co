@@ -4,7 +4,8 @@ import Header from '../components/Header';
 import Slider from '../components/Slider';
 import SeparatorManager from '../components/SeparatorManager';
 import RecommendationPanel from '../components/RecommendationPanel';
-import { getChunkSettings, previewChunks, updateChunkSettings } from '../services/api';
+import { previewChunks } from '../services/api';
+import { useChunkSettings } from '../hooks/useChunkSettings';
 import type { ChunkPreviewResponse } from '../types/api';
 import './ChunkingSettings.css';
 
@@ -12,6 +13,8 @@ const DEFAULT_PREVIEW_TEXT =
   '건축법 제11조에 따른 허가를 받으려는 자는 별지 서식에 따른 신청서를 제출해야 한다.';
 
 const ChunkingSettings = () => {
+  const { settings, loading, error, loadSettings, saveSettings } = useChunkSettings();
+
   const [chunkSize, setChunkSize] = useState(1000);
   const [chunkOverlap, setChunkOverlap] = useState(200);
   const [separators, setSeparators] = useState(['\n\n', '\n', '. ', ' ']);
@@ -19,12 +22,10 @@ const ChunkingSettings = () => {
   const [minChunkSize, setMinChunkSize] = useState(100);
   const [maxChunkSize, setMaxChunkSize] = useState(2000);
   const [includeSeparator, setIncludeSeparator] = useState(true);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [previewText, setPreviewText] = useState(DEFAULT_PREVIEW_TEXT);
   const [previewResult, setPreviewResult] = useState<ChunkPreviewResponse | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const isMountedRef = useRef(true);
 
   useEffect(() => {
@@ -33,30 +34,13 @@ const ChunkingSettings = () => {
     };
   }, []);
 
-  const loadSettings = useCallback(async () => {
-    if (!isMountedRef.current) return;
-    setLoading(true);
-    setError(null);
-
-    try {
-      const settings = await getChunkSettings();
-      if (!isMountedRef.current) return;
+  // Load settings from hook
+  useEffect(() => {
+    if (settings) {
       setChunkSize(settings.chunkSize);
       setChunkOverlap(settings.chunkOverlap);
-    } catch (err) {
-      if (!isMountedRef.current) return;
-      const message =
-        err instanceof Error ? err.message : '청킹 설정을 불러오지 못했습니다.';
-      setError(message);
-    } finally {
-      if (!isMountedRef.current) return;
-      setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    loadSettings();
-  }, [loadSettings]);
+  }, [settings]);
 
   const handleAddSeparator = (separator: string) => {
     setSeparators([...separators, separator]);
@@ -68,21 +52,21 @@ const ChunkingSettings = () => {
 
   const handleSave = async () => {
     setSaving(true);
-    setError(null);
     try {
-      await updateChunkSettings({ chunkSize, chunkOverlap });
+      await saveSettings({ chunkSize, chunkOverlap });
       alert('설정이 저장되었습니다!');
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : '설정을 저장하지 못했습니다.';
-      setError(message);
+      // Error already handled in hook
     } finally {
       setSaving(false);
     }
   };
 
   const handleCancel = () => {
-    loadSettings();
+    if (settings) {
+      setChunkSize(settings.chunkSize);
+      setChunkOverlap(settings.chunkOverlap);
+    }
   };
 
   const handlePreview = async () => {

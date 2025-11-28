@@ -70,6 +70,57 @@ export const getProjectMessages = (projectId: number, page?: number, size?: numb
 export const sendProjectMessage = (projectId: number, payload: ChatMessagePayload) =>
   apiClient.post<ChatMessage>(`${PROJECTS_BASE}/${projectId}/messages`, payload);
 
+// Streaming message API
+export const sendProjectMessageStream = async (
+  projectId: number,
+  payload: ChatMessagePayload,
+  onChunk: (chunk: string) => void,
+  onComplete: () => void,
+  onError: (error: Error) => void
+) => {
+  try {
+    const response = await fetch(`http://localhost:8080${PROJECTS_BASE}/${projectId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ...payload, stream: true }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+
+    if (!reader) {
+      throw new Error('Response body is not readable');
+    }
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (line.startsWith('data:')) {
+          const data = line.slice(5).trim();
+          if (data && data !== '[DONE]') {
+            onChunk(data);
+          }
+        }
+      }
+    }
+
+    onComplete();
+  } catch (error) {
+    onError(error instanceof Error ? error : new Error('Unknown error'));
+  }
+};
+
 // Chunk settings
 export const getChunkSettings = () =>
   apiClient.get<ChunkSettings>(`${SETTINGS_BASE}/chunk`);
