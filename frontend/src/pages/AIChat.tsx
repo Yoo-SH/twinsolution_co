@@ -4,7 +4,7 @@ import Header from '../components/Header';
 import ProjectPanel from '../components/ProjectPanel';
 import ChatMessage from '../components/ChatMessage';
 import ChatInput from '../components/ChatInput';
-import { getProjectMessages, getRecentProjects, sendProjectMessage } from '../services/api';
+import { getProjectMessages, getRecentProjects, sendProjectMessageStream } from '../services/api';
 import type { ChatMessage as ChatMessageDto, Project } from '../types/api';
 import './AIChat.css';
 
@@ -47,7 +47,7 @@ const AIChat = () => {
   useEffect(() => {
     if (!messagesContainerRef.current) return;
     messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-  }, [messages.length]);
+  }, [messages]);
 
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === selectedProjectId) ?? null,
@@ -133,7 +133,7 @@ const AIChat = () => {
     const trimmed = text.trim();
     if (!trimmed) return;
 
-    const optimisticMessage: ChatMessageDto = {
+    const optimisticUserMessage: ChatMessageDto = {
       id: Date.now() * -1,
       sessionId: -1,
       role: 'user',
@@ -141,7 +141,15 @@ const AIChat = () => {
       createdAt: new Date().toISOString(),
     };
 
-    setMessages((prev) => [...prev, optimisticMessage]);
+    const optimisticAssistantMessage: ChatMessageDto = {
+      id: Date.now() * -1 - 1,
+      sessionId: -1,
+      role: 'assistant',
+      content: '',
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, optimisticUserMessage, optimisticAssistantMessage]);
     setSending(true);
     setError(null);
 
@@ -152,18 +160,54 @@ const AIChat = () => {
         model: advancedOptions.model || undefined,
         temperature: advancedOptions.temperature ?? undefined,
         maxTokens: advancedOptions.maxTokens ?? undefined,
-        stream: advancedOptions.stream,
       };
-      await sendProjectMessage(selectedProjectId, payload);
-      await loadMessages(selectedProjectId);
+
+      let accumulatedContent = '';
+
+      await sendProjectMessageStream(
+        selectedProjectId,
+        payload,
+        (chunk: string) => {
+          // 스트리밍 청크를 받을 때마다 메시지 업데이트
+          accumulatedContent += chunk;
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === optimisticAssistantMessage.id
+                ? { ...msg, content: accumulatedContent }
+                : msg
+            )
+          );
+        },
+        async () => {
+          // 스트리밍 완료 후 서버에서 최신 메시지 다시 로드
+          if (!isMountedRef.current) return;
+          await loadMessages(selectedProjectId);
+          setSending(false);
+        },
+        (error: Error) => {
+          // 에러 처리
+          if (!isMountedRef.current) return;
+          setError(error.message || '메시지를 전송하지 못했습니다.');
+          setMessages((prev) =>
+            prev.filter(
+              (msg) =>
+                msg.id !== optimisticUserMessage.id && msg.id !== optimisticAssistantMessage.id
+            )
+          );
+          setSending(false);
+        }
+      );
     } catch (err) {
       if (!isMountedRef.current) return;
       const message =
         err instanceof Error ? err.message : '메시지를 전송하지 못했습니다.';
       setError(message);
-      setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessage.id));
-    } finally {
-      if (!isMountedRef.current) return;
+      setMessages((prev) =>
+        prev.filter(
+          (msg) =>
+            msg.id !== optimisticUserMessage.id && msg.id !== optimisticAssistantMessage.id
+        )
+      );
       setSending(false);
     }
   };
@@ -181,8 +225,10 @@ const AIChat = () => {
           minute: '2-digit',
           hour12: true,
         }),
+        isWaiting: sending && msg.role === 'assistant' && msg.id < 0 && msg.content === '',
+        isStreaming: sending && msg.role === 'assistant' && msg.id < 0 && msg.content !== '',
       })),
-    [messages],
+    [messages, sending],
   );
 
   return (
@@ -343,6 +389,8 @@ const AIChat = () => {
                     role={msg.role === 'assistant' ? 'assistant' : 'user'}
                     message={msg.content}
                     timestamp={msg.formattedTime}
+                    isWaiting={msg.isWaiting}
+                    isStreaming={msg.isStreaming}
                   />
                 ))
               )}

@@ -25,6 +25,15 @@
 
 .message-avatar {
   font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 }
 
 .message-sender {
@@ -96,5 +105,21 @@
   text-decoration: underline;
   text-underline-position: from-font;
   text-decoration-skip-ink: none;
+}
+
+.streaming-cursor {
+  display: inline-block;
+  margin-left: 2px;
+  animation: blink 1s infinite;
+  color: var(--secondary-color);
+}
+
+@keyframes blink {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
 }
 
