@@ -4,7 +4,7 @@
   flex: 0 0 288px;
   background-color: #f2f4f7;
   padding: 16px;
-  height: calc(100vh - 64px);
+  height: calc(100vh - 80px);
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
