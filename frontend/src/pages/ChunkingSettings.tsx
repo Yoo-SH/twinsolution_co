@@ -69,6 +69,38 @@ const ChunkingSettings = () => {
     }
   };
 
+  // 시연용: 더미 청킹 결과 생성 함수
+  const generateMockChunks = (
+    text: string,
+    size: number,
+    overlap: number,
+  ): ChunkPreviewResponse['chunks'] => {
+    const chunks: ChunkPreviewResponse['chunks'] = [];
+    let currentIndex = 0;
+    let chunkIndex = 0;
+
+    while (currentIndex < text.length) {
+      const endIndex = Math.min(currentIndex + size, text.length);
+      const chunkContent = text.slice(currentIndex, endIndex);
+      
+      chunks.push({
+        index: chunkIndex,
+        content: chunkContent,
+        length: chunkContent.length,
+      });
+
+      // 다음 청크 시작 위치 계산 (오버랩 고려)
+      currentIndex = endIndex - overlap;
+      chunkIndex++;
+
+      // 무한 루프 방지
+      if (currentIndex >= text.length) break;
+      if (chunkIndex > 20) break; // 최대 청크 수 제한
+    }
+
+    return chunks;
+  };
+
   const handlePreview = async () => {
     if (!previewText.trim()) {
       alert('미리보기 텍스트를 입력해주세요.');
@@ -79,14 +111,34 @@ const ChunkingSettings = () => {
     setError(null);
 
     try {
-      const result = await previewChunks({
-        text: previewText,
-        chunkSize,
-        chunkOverlap,
-        separators,
-      });
+      // 시연용: 더미 청킹 결과 생성 (실제 API 호출 대신)
+      await new Promise((resolve) => setTimeout(resolve, 800)); // 미리보기 생성 시뮬레이션
+      
       if (!isMountedRef.current) return;
-      setPreviewResult(result);
+
+      const mockChunks = generateMockChunks(previewText, chunkSize, chunkOverlap);
+      const totalLength = mockChunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      const averageLength = mockChunks.length > 0 ? totalLength / mockChunks.length : 0;
+      const overlapRatio = chunkSize > 0 ? (chunkOverlap / chunkSize) * 100 : 0;
+
+      const mockResult: ChunkPreviewResponse = {
+        chunks: mockChunks,
+        totalChunks: mockChunks.length,
+        averageLength: Math.round(averageLength),
+        overlapRatio: Math.round(overlapRatio * 10) / 10,
+      };
+
+      setPreviewResult(mockResult);
+
+      // 실제 API 호출은 주석 처리 (시연용)
+      // const result = await previewChunks({
+      //   text: previewText,
+      //   chunkSize,
+      //   chunkOverlap,
+      //   separators,
+      // });
+      // if (!isMountedRef.current) return;
+      // setPreviewResult(result);
     } catch (err) {
       if (!isMountedRef.current) return;
       const message =

@@ -120,8 +120,30 @@ const RAGManagement = () => {
     setUploading(true);
 
     try {
-      const uploaded = await uploadDocument(selectedProjectId, file);
-      setDocuments((prev) => [uploaded, ...prev]);
+      // 시연용: 더미 데이터 반환 (실제 API 호출 대신)
+      await new Promise((resolve) => setTimeout(resolve, 1500)); // 업로드 시뮬레이션 (1.5초)
+      
+      const mockDocument = {
+        id: Date.now(),
+        projectId: selectedProjectId,
+        name: file.name || '건축법규_매뉴얼_2024.pdf',
+        fileType: file.type.includes('pdf') ? 'pdf' : file.name.split('.').pop() || 'pdf',
+        filePath: `/uploads/documents/${Date.now()}-${file.name}`,
+        origin: '업로드',
+        status: '분할완료' as const,
+        chunkSize: 1000,
+        chunkOverlap: 200,
+        chunkCount: 18,
+        hasAnalysisReport: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      setDocuments((prev) => [mockDocument, ...prev]);
+      
+      // 실제 API 호출은 주석 처리 (시연용)
+      // const uploaded = await uploadDocument(selectedProjectId, file);
+      // setDocuments((prev) => [uploaded, ...prev]);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : '문서를 업로드하지 못했습니다.';

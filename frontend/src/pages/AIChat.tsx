@@ -128,6 +128,103 @@ const AIChat = () => {
     }
   }, [selectedProjectId, loadMessages]);
 
+  // 시연용: 더미 AI 응답 생성 함수
+  const getMockAIResponse = (question: string): string => {
+    const lowerQuestion = question.toLowerCase();
+    
+    if (lowerQuestion.includes('준주거지역') || lowerQuestion.includes('법령') || lowerQuestion.includes('서류')) {
+      return `준주거지역의 건축 허가를 받기 위해서는 다음 서류가 필요합니다:
+
+1. 건축허가 신청서
+2. 건축계획서
+3. 대지 및 건축물 위치도
+4. 구조계산서
+5. 에너지절약계획서
+6. 주차장 설치계획서
+
+이 서류들은 건축법 제11조 및 건축법 시행령에 따라 필수적으로 제출해야 합니다.
+
+출처: 건축법규_매뉴얼_2024.pdf, 페이지 5-7`;
+    }
+    
+    if (lowerQuestion.includes('에너지절약') || lowerQuestion.includes('에너지')) {
+      return `에너지절약계획서는 건축법 시행령 제3조에 따라 다음 항목을 포함해야 합니다:
+
+- 건축물의 에너지 소비량 예측
+- 단열재 및 창호 성능 기준
+- 냉난방 설비 계획
+- 신재생에너지 활용 계획
+- 조명 설비 효율 계획
+
+에너지절약계획서는 건축허가 신청 시 필수 서류이며, 전문가의 검토를 받아야 합니다.
+
+출처: 건축법규_매뉴얼_2024.pdf, 페이지 12-15`;
+    }
+    
+    if (lowerQuestion.includes('주차장') || lowerQuestion.includes('주차')) {
+      return `주차장 설치 기준은 건축법 제61조 및 건축법 시행령 제119조에 규정되어 있습니다:
+
+주거용 건축물: 1세대당 1대 이상
+업무용 건축물: 연면적 200㎡당 1대 이상
+상업용 건축물: 연면적 150㎡당 1대 이상
+공업용 건축물: 연면적 300㎡당 1대 이상
+
+주차장은 건축물의 용도와 규모에 따라 차등 적용되며, 지하주차장 설치 시 추가 기준이 적용됩니다.
+
+출처: 건축법규_매뉴얼_2024.pdf, 페이지 8-10`;
+    }
+    
+    if (lowerQuestion.includes('내진') || lowerQuestion.includes('지진')) {
+      return `내진설계 의무 대상은 건축법 시행령 제95조에 따라 다음과 같습니다:
+
+- 지하층이 있는 건축물
+- 연면적 1,000㎡ 이상인 건축물
+- 높이 13m 이상인 건축물
+- 특별시, 광역시, 시 지역의 연면적 500㎡ 이상인 건축물
+
+내진설계는 구조안전성 확보를 위해 필수이며, 구조계산서에 포함되어야 합니다.
+
+출처: 건축법규_매뉴얼_2024.pdf, 페이지 18-20`;
+    }
+    
+    // 기본 응답
+    return `건축법 및 관련 법령에 대한 질문이시군요. 
+
+업로드된 매뉴얼을 기반으로 답변드리겠습니다. 좀 더 구체적인 질문을 해주시면 더 정확한 답변을 제공할 수 있습니다.
+
+예를 들어:
+- "준주거지역 법령은 서류는?"
+- "에너지절약계획서 작성 방법"
+- "주차장 설치 기준 법령"
+- "내진설계 의무 대상"
+
+출처: 건축법규_매뉴얼_2024.pdf`;
+  };
+
+  // 시연용: 스트리밍 시뮬레이션 함수
+  const simulateStreaming = async (
+    fullText: string,
+    onChunk: (chunk: string) => void,
+    onComplete: () => void,
+  ) => {
+    const words = fullText.split(/(\s+)/);
+    let currentIndex = 0;
+
+    const streamInterval = setInterval(() => {
+      if (currentIndex >= words.length) {
+        clearInterval(streamInterval);
+        onComplete();
+        return;
+      }
+
+      // 한 번에 2-3개 단어씩 전송하여 자연스러운 스트리밍 효과
+      const chunkSize = Math.min(2 + Math.floor(Math.random() * 2), words.length - currentIndex);
+      const chunk = words.slice(currentIndex, currentIndex + chunkSize).join('');
+      onChunk(chunk);
+      currentIndex += chunkSize;
+    }, 50); // 50ms마다 청크 전송
+  };
+
   const handleSendMessage = async (text: string) => {
     if (!selectedProjectId) return;
     const trimmed = text.trim();
@@ -154,21 +251,13 @@ const AIChat = () => {
     setError(null);
 
     try {
-      const payload = {
-        content: trimmed,
-        systemPrompt: advancedOptions.systemPrompt || undefined,
-        model: advancedOptions.model || undefined,
-        temperature: advancedOptions.temperature ?? undefined,
-        maxTokens: advancedOptions.maxTokens ?? undefined,
-      };
-
+      // 시연용: 더미 AI 응답 스트리밍
+      const mockResponse = getMockAIResponse(trimmed);
       let accumulatedContent = '';
 
-      await sendProjectMessageStream(
-        selectedProjectId,
-        payload,
+      await simulateStreaming(
+        mockResponse,
         (chunk: string) => {
-          // 스트리밍 청크를 받을 때마다 메시지 업데이트
           accumulatedContent += chunk;
           setMessages((prev) =>
             prev.map((msg) =>
@@ -178,25 +267,51 @@ const AIChat = () => {
             )
           );
         },
-        async () => {
-          // 스트리밍 완료 후 서버에서 최신 메시지 다시 로드
+        () => {
           if (!isMountedRef.current) return;
-          await loadMessages(selectedProjectId);
-          setSending(false);
-        },
-        (error: Error) => {
-          // 에러 처리
-          if (!isMountedRef.current) return;
-          setError(error.message || '메시지를 전송하지 못했습니다.');
-          setMessages((prev) =>
-            prev.filter(
-              (msg) =>
-                msg.id !== optimisticUserMessage.id && msg.id !== optimisticAssistantMessage.id
-            )
-          );
           setSending(false);
         }
       );
+
+      // 실제 API 호출은 주석 처리 (시연용)
+      // const payload = {
+      //   content: trimmed,
+      //   systemPrompt: advancedOptions.systemPrompt || undefined,
+      //   model: advancedOptions.model || undefined,
+      //   temperature: advancedOptions.temperature ?? undefined,
+      //   maxTokens: advancedOptions.maxTokens ?? undefined,
+      // };
+      // let accumulatedContent = '';
+      // await sendProjectMessageStream(
+      //   selectedProjectId,
+      //   payload,
+      //   (chunk: string) => {
+      //     accumulatedContent += chunk;
+      //     setMessages((prev) =>
+      //       prev.map((msg) =>
+      //         msg.id === optimisticAssistantMessage.id
+      //           ? { ...msg, content: accumulatedContent }
+      //           : msg
+      //       )
+      //     );
+      //   },
+      //   async () => {
+      //     if (!isMountedRef.current) return;
+      //     await loadMessages(selectedProjectId);
+      //     setSending(false);
+      //   },
+      //   (error: Error) => {
+      //     if (!isMountedRef.current) return;
+      //     setError(error.message || '메시지를 전송하지 못했습니다.');
+      //     setMessages((prev) =>
+      //       prev.filter(
+      //         (msg) =>
+      //           msg.id !== optimisticUserMessage.id && msg.id !== optimisticAssistantMessage.id
+      //       )
+      //     );
+      //     setSending(false);
+      //   }
+      // );
     } catch (err) {
       if (!isMountedRef.current) return;
       const message =
