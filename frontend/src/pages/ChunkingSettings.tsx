@@ -76,6 +76,17 @@ const ChunkingSettings = () => {
     overlap: number,
   ): ChunkPreviewResponse['chunks'] => {
     const chunks: ChunkPreviewResponse['chunks'] = [];
+    
+    // 텍스트가 청크 크기보다 작으면 전체를 하나의 청크로
+    if (text.length <= size) {
+      chunks.push({
+        index: 0,
+        content: text,
+        length: text.length,
+      });
+      return chunks;
+    }
+
     let currentIndex = 0;
     let chunkIndex = 0;
 
@@ -96,6 +107,16 @@ const ChunkingSettings = () => {
       // 무한 루프 방지
       if (currentIndex >= text.length) break;
       if (chunkIndex > 20) break; // 최대 청크 수 제한
+      if (currentIndex <= 0) break; // 진행이 없으면 중단
+    }
+
+    // 최소 1개 청크는 보장
+    if (chunks.length === 0) {
+      chunks.push({
+        index: 0,
+        content: text,
+        length: text.length,
+      });
     }
 
     return chunks;
@@ -109,12 +130,16 @@ const ChunkingSettings = () => {
 
     setPreviewLoading(true);
     setError(null);
+    setPreviewResult(null); // 이전 결과 초기화
 
     try {
       // 시연용: 더미 청킹 결과 생성 (실제 API 호출 대신)
-      await new Promise((resolve) => setTimeout(resolve, 800)); // 미리보기 생성 시뮬레이션
-      
-      if (!isMountedRef.current) return;
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // 미리보기 생성 시뮬레이션 (2초)
+
+      if (!isMountedRef.current) {
+        setPreviewLoading(false);
+        return;
+      }
 
       const mockChunks = generateMockChunks(previewText, chunkSize, chunkOverlap);
       const totalLength = mockChunks.reduce((sum, chunk) => sum + chunk.length, 0);
@@ -129,6 +154,7 @@ const ChunkingSettings = () => {
       };
 
       setPreviewResult(mockResult);
+      setPreviewLoading(false);
 
       // 실제 API 호출은 주석 처리 (시연용)
       // const result = await previewChunks({
@@ -140,13 +166,14 @@ const ChunkingSettings = () => {
       // if (!isMountedRef.current) return;
       // setPreviewResult(result);
     } catch (err) {
-      if (!isMountedRef.current) return;
+      if (!isMountedRef.current) {
+        setPreviewLoading(false);
+        return;
+      }
       const message =
         err instanceof Error ? err.message : '미리보기를 생성하지 못했습니다.';
       setError(message);
       setPreviewResult(null);
-    } finally {
-      if (!isMountedRef.current) return;
       setPreviewLoading(false);
     }
   };

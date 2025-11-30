@@ -32,10 +32,13 @@ const formatOrigin = (origin: string) => {
 };
 
 const getStatusMeta = (status: string) => {
-  if (status === '분석완료') {
-    return { className: 'status-completed', text: '완료된 문서' };
+  if (status === '분석완료' || status === '분할완료') {
+    return { className: 'status-completed', text: status === '분석완료' ? '완료된 문서' : '분할완료' };
   }
-  return { className: 'status-processing', text: '처리 중' };
+  if (status === '분석중' || status === '업로드됨') {
+    return { className: 'status-processing', text: '처리 중' };
+  }
+  return { className: 'status-processing', text: status || '처리 중' };
 };
 
 const DocumentTable = ({
