@@ -12,7 +12,7 @@ import { useDocuments } from '../hooks/useDocuments';
 import type { Project } from '../types/api';
 import './RAGManagement.css';
 
-const STATUS_FILTERS = ['전체 상태', '업로드됨', '분석완료'];
+const STATUS_FILTERS = ['전체 상태', '업로드됨', '처리 중', '분석완료', 'RAG 인덱싱 완료', 'RAG 인덱싱 실패'];
 
 const RAGManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -75,7 +75,10 @@ const RAGManagement = () => {
   }, [documents, searchQuery, statusFilter]);
 
   const stats = useMemo(() => {
-    const completed = documents.filter((doc) => doc.status === '분석완료').length;
+    // 완료 상태: 분석완료, RAG 인덱싱 완료
+    const completed = documents.filter((doc) =>
+      doc.status === '분석완료' || doc.status === 'RAG 인덱싱 완료'
+    ).length;
     const processing = documents.length - completed;
     const chunkTotal = documents.reduce((total, doc) => total + (doc.chunkCount ?? 0), 0);
 

@@ -1,5 +1,6 @@
 package com.twinsolution.construction.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,6 +10,24 @@ import java.util.List;
 import java.util.Map;
 
 public class RagDto {
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DocumentUploadResponse {
+        private Boolean success;
+        private String message;
+
+        @JsonProperty("document_count")
+        private Integer documentCount;
+
+        @JsonProperty("chunk_count")
+        private Integer chunkCount;
+
+        @JsonProperty("indexed_ids")
+        private List<String> indexedIds;
+    }
 
     @Data
     @Builder

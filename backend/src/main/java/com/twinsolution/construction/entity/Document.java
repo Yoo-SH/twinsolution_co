@@ -47,6 +47,9 @@ public class Document {
     @Column(name = "chunck_overlap")
     private Integer chunkOverlap;
 
+    @Column(name = "actual_chunk_count")
+    private Integer actualChunkCount;  // RAG 서비스에서 실제 생성된 청크 개수
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

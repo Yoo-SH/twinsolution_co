@@ -32,10 +32,16 @@ const formatOrigin = (origin: string) => {
 };
 
 const getStatusMeta = (status: string) => {
-  if (status === '분석완료') {
-    return { className: 'status-completed', text: '완료된 문서' };
+  // 완료 상태: 분석완료, RAG 인덱싱 완료
+  if (status === '분석완료' || status === 'RAG 인덱싱 완료') {
+    return { className: 'status-completed', text: status };
   }
-  return { className: 'status-processing', text: '처리 중' };
+  // 실패 상태
+  if (status === 'RAG 인덱싱 실패') {
+    return { className: 'status-failed', text: status };
+  }
+  // 처리 중 상태: 업로드됨, 분할완료 등
+  return { className: 'status-processing', text: status };
 };
 
 const DocumentTable = ({
@@ -96,7 +102,9 @@ const DocumentTable = ({
                 </span>
               </div>
               <div className="table-cell">
-                {doc.chunkCount > 0 ? `${doc.chunkCount.toLocaleString()}개` : '-'}
+                {doc.chunkCount != null && doc.chunkCount > 0
+                  ? `${doc.chunkCount.toLocaleString()}개`
+                  : '-'}
               </div>
               <div className="table-cell">{formatDateTime(doc.createdAt)}</div>
               <div className="table-cell actions">
