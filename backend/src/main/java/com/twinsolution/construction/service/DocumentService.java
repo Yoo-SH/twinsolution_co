@@ -1,6 +1,7 @@
 package com.twinsolution.construction.service;
 
 import com.twinsolution.construction.dto.DocumentDto;
+import com.twinsolution.construction.dto.RagDto;
 import com.twinsolution.construction.entity.Document;
 import com.twinsolution.construction.entity.Project;
 import com.twinsolution.construction.exception.BadRequestException;
@@ -11,10 +12,13 @@ import com.twinsolution.construction.repository.DocumentRepository;
 import com.twinsolution.construction.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -41,6 +45,14 @@ public class DocumentService {
     private final AnalysisReportRepository analysisReportRepository;
     private final SettingService settingService;
     private final WebClient ragWebClient;  // RAG 서비스 클라이언트
+
+    // Self-injection for transaction propagation in async thread
+    private DocumentService self;
+
+    @Autowired
+    public void setSelf(@Lazy DocumentService self) {
+        this.self = self;
+    }
 
     private static final String UPLOAD_DIR = "uploads/documents/";
 
@@ -108,41 +120,71 @@ public class DocumentService {
                 builder.part("post_process_min_size", chunkSettings.getChunkOverlap() != null ? chunkSettings.getChunkOverlap() : 500);
 
                 // RAG 서비스 호출
-                String response = ragWebClient.post()
+                RagDto.DocumentUploadResponse response = ragWebClient.post()
                         .uri("/api/v1/RAG/documents/upload")
                         .contentType(MediaType.MULTIPART_FORM_DATA)
                         .body(BodyInserters.fromMultipartData(builder.build()))
                         .retrieve()
-                        .bodyToMono(String.class)
+                        .bodyToMono(RagDto.DocumentUploadResponse.class)
                         .block();
 
-                log.info("RAG 서비스 업로드 완료. Document ID: {}, Response: {}",
-                        document.getId(), response);
+                log.info("RAG 서비스 응답 전체: success={}, message={}, documentCount={}, chunkCount={}, indexedIds={}",
+                        response.getSuccess(), response.getMessage(), response.getDocumentCount(),
+                        response.getChunkCount(), response.getIndexedIds());
 
-                // 문서 상태 업데이트
-                updateDocumentStatus(document.getId(), "RAG 인덱싱 완료");
+                log.info("RAG 서비스 업로드 완료. Document ID: {}, Chunk Count: {}, Response: {}",
+                        document.getId(), response.getChunkCount(), response.getMessage());
+
+                // 문서 상태 및 청크 수 업데이트 (self-injection을 통한 트랜잭션 프록시 사용)
+                self.updateDocumentStatusAndChunkCount(document.getId(), "RAG 인덱싱 완료", response.getChunkCount());
 
             } catch (Exception e) {
                 log.error("RAG 서비스 업로드 실패. Document ID: {}, Error: {}",
                         document.getId(), e.getMessage(), e);
-                updateDocumentStatus(document.getId(), "RAG 인덱싱 실패");
+                self.updateDocumentStatusAndChunkCount(document.getId(), "RAG 인덱싱 실패", 0);
             }
         }).start();
     }
 
     /**
      * 문서 상태 업데이트
+     * REQUIRES_NEW: 별도 스레드에서 호출될 때도 새로운 트랜잭션 생성
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void updateDocumentStatus(Long documentId, String status) {
         try {
             Document document = documentRepository.findById(documentId).orElse(null);
             if (document != null) {
                 document.setStatus(status);
                 documentRepository.save(document);
+                log.info("문서 상태 업데이트 성공. Document ID: {}, Status: {}", documentId, status);
+            } else {
+                log.warn("문서를 찾을 수 없음. Document ID: {}", documentId);
             }
         } catch (Exception e) {
-            log.error("문서 상태 업데이트 실패. Document ID: {}", documentId, e);
+            log.error("문서 상태 업데이트 실패. Document ID: {}, Error: {}", documentId, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 문서 상태 및 청크 수 업데이트
+     * REQUIRES_NEW: 별도 스레드에서 호출될 때도 새로운 트랜잭션 생성
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void updateDocumentStatusAndChunkCount(Long documentId, String status, Integer chunkCount) {
+        try {
+            Document document = documentRepository.findById(documentId).orElse(null);
+            if (document != null) {
+                document.setStatus(status);
+                document.setActualChunkCount(chunkCount);
+                documentRepository.save(document);
+                log.info("문서 상태 및 청크 수 업데이트 성공. Document ID: {}, Status: {}, Chunk Count: {}",
+                        documentId, status, chunkCount);
+            } else {
+                log.warn("문서를 찾을 수 없음. Document ID: {}", documentId);
+            }
+        } catch (Exception e) {
+            log.error("문서 상태 업데이트 실패. Document ID: {}, Error: {}", documentId, e.getMessage(), e);
         }
     }
 
@@ -214,7 +256,8 @@ public class DocumentService {
     }
 
     private DocumentDto.Response convertToResponse(Document document) {
-        long chunkCount = documentChunkRepository.countByDocumentId(document.getId());
+        // RAG 서비스에서 저장한 실제 청크 수 사용 (없으면 0)
+        long chunkCount = document.getActualChunkCount() != null ? document.getActualChunkCount() : 0;
         boolean hasAnalysisReport = analysisReportRepository.existsByDocumentId(document.getId());
 
         return DocumentDto.Response.builder()

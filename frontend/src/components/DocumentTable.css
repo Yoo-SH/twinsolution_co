@@ -90,6 +90,11 @@
   color: #edc531;
 }
 
+.status-failed {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: #f44336;
+}
+
 .actions {
   gap: 12px;
   justify-content: flex-start;

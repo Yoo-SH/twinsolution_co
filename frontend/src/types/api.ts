@@ -58,7 +58,7 @@ export interface DocumentItem {
   status: DocumentStatus;
   chunkSize: number | null;
   chunkOverlap: number | null;
-  chunkCount: number;
+  chunkCount: number | null;  // RAG 인덱싱 전에는 null일 수 있음
   hasAnalysisReport: boolean;
   createdAt: string;
   updatedAt: string;
