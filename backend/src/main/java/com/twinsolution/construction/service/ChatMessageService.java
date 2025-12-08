@@ -4,11 +4,13 @@ import com.twinsolution.construction.api.openai.OpenAiChatClient;
 import com.twinsolution.construction.config.LangChainConfig;
 import com.twinsolution.construction.dto.ChatMessageDto;
 import com.twinsolution.construction.dto.OpenAiDto;
+import com.twinsolution.construction.dto.RagDto;
 import com.twinsolution.construction.entity.ChatMessage;
 import com.twinsolution.construction.entity.ChatSession;
 import com.twinsolution.construction.exception.ResourceNotFoundException;
 import com.twinsolution.construction.repository.ChatMessageRepository;
 import com.twinsolution.construction.repository.ChatSessionRepository;
+import org.springframework.web.reactive.function.client.WebClient;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
@@ -42,6 +44,7 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatSessionRepository chatSessionRepository;
     private final OpenAiChatClient openAiChatClient;
+    private final WebClient ragWebClient;  // RAG 서비스 클라이언트
 
     // LangChain4j 컴포넌트
     private final ChatLanguageModel chatLanguageModel;
@@ -93,16 +96,29 @@ public class ChatMessageService {
 
     /**
      * LangChain4j를 사용한 멀티턴 대화 생성 (일반 응답)
+     * RAG 기반 컨텍스트 검색 포함
      */
     private String generateMultiTurnAIResponse(Long sessionId, ChatMessageDto.Request request) {
+        // 세션 정보 가져오기
+        ChatSession session = chatSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("채팅 세션", "ID", sessionId));
+
+        // RAG 기반 컨텍스트 검색 (프로젝트별 문서 검색)
+        String ragContext = retrieveRagContext(session.getProject().getId(), request.getContent());
+
         // 세션별 ChatMemory 가져오거나 생성
         ChatMemory chatMemory = chatMemoryStore.computeIfAbsent(sessionId,
             id -> {
                 ChatMemory memory = langChainConfig.createChatMemory(20); // 최근 20개 메시지 유지
 
-                // 시스템 프롬프트가 있으면 추가
-                if (request.getSystemPrompt() != null && !request.getSystemPrompt().isEmpty()) {
-                    memory.add(SystemMessage.from(request.getSystemPrompt()));
+                // 시스템 프롬프트 생성 (RAG 컨텍스트 포함)
+                String systemPrompt = buildSystemPromptWithRagContext(
+                    request.getSystemPrompt(),
+                    ragContext
+                );
+
+                if (systemPrompt != null && !systemPrompt.isEmpty()) {
+                    memory.add(SystemMessage.from(systemPrompt));
                 }
 
                 // DB에서 기존 대화 이력 로드
@@ -121,9 +137,70 @@ public class ChatMessageService {
         // AI 응답을 메모리에 추가
         chatMemory.add(response.content());
 
-        log.info("멀티턴 대화 생성 완료. 세션 ID: {}, 메모리 크기: {}", sessionId, chatMemory.messages().size());
+        log.info("멀티턴 대화 생성 완료. 세션 ID: {}, 메모리 크기: {}, RAG 컨텍스트: {}자",
+                sessionId, chatMemory.messages().size(), ragContext != null ? ragContext.length() : 0);
 
         return aiResponseText;
+    }
+
+    /**
+     * RAG 서비스에서 관련 문서 검색 (프로젝트별 격리)
+     */
+    private String retrieveRagContext(Long projectId, String query) {
+        try {
+            RagDto.SearchRequest ragRequest = RagDto.SearchRequest.builder()
+                    .query(query)
+                    .projectId(projectId.toString())  // 프로젝트 ID로 필터링
+                    .topK(5)
+                    .similarityThreshold(0.3f)
+                    .enableReranking(false)
+                    .maxContextLength(4000)
+                    .build();
+
+            RagDto.SearchResponse ragResponse = ragWebClient.post()
+                    .uri("/v1/rag/search")
+                    .bodyValue(ragRequest)
+                    .retrieve()
+                    .bodyToMono(RagDto.SearchResponse.class)
+                    .block();
+
+            if (ragResponse != null && ragResponse.getSuccess() && ragResponse.getContext() != null) {
+                log.info("RAG 검색 성공. 프로젝트 ID: {}, 결과 개수: {}, 컨텍스트 길이: {}",
+                        projectId, ragResponse.getTotalResults(), ragResponse.getContext().length());
+                return ragResponse.getContext();
+            }
+
+            log.debug("RAG 검색 결과 없음. 프로젝트 ID: {}", projectId);
+            return null;
+
+        } catch (Exception e) {
+            log.error("RAG 검색 오류. 프로젝트 ID: {}, 오류: {}", projectId, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * RAG 컨텍스트를 포함한 시스템 프롬프트 생성
+     */
+    private String buildSystemPromptWithRagContext(String originalSystemPrompt, String ragContext) {
+        StringBuilder systemPrompt = new StringBuilder();
+
+        // 기본 시스템 프롬프트
+        if (originalSystemPrompt != null && !originalSystemPrompt.isEmpty()) {
+            systemPrompt.append(originalSystemPrompt);
+        } else {
+            systemPrompt.append("당신은 건축 프로젝트를 지원하는 AI 어시스턴트입니다.");
+        }
+
+        // RAG 컨텍스트 추가
+        if (ragContext != null && !ragContext.isEmpty()) {
+            systemPrompt.append("\n\n");
+            systemPrompt.append("다음은 프로젝트 문서에서 검색한 관련 정보입니다:\n\n");
+            systemPrompt.append(ragContext);
+            systemPrompt.append("\n\n위 정보를 참고하여 사용자의 질문에 답변해주세요.");
+        }
+
+        return systemPrompt.toString();
     }
 
     /**
@@ -186,6 +263,7 @@ public class ChatMessageService {
 
     /**
      * SseEmitter를 사용한 멀티턴 스트리밍 방식으로 메시지 전송
+     * RAG 기반 컨텍스트 검색 포함
      * @param sessionId 세션 ID
      * @param request 채팅 메시지 요청
      * @return SseEmitter
@@ -202,6 +280,9 @@ public class ChatMessageService {
                 .build();
         chatMessageRepository.save(userMessage);
 
+        // RAG 기반 컨텍스트 검색 (프로젝트별 문서 검색)
+        String ragContext = retrieveRagContext(session.getProject().getId(), request.getContent());
+
         // SseEmitter 생성 (타임아웃: 5분)
         SseEmitter emitter = new SseEmitter(300000L);
 
@@ -213,9 +294,14 @@ public class ChatMessageService {
             id -> {
                 ChatMemory memory = langChainConfig.createChatMemory(20);
 
-                // 시스템 프롬프트가 있으면 추가
-                if (request.getSystemPrompt() != null && !request.getSystemPrompt().isEmpty()) {
-                    memory.add(SystemMessage.from(request.getSystemPrompt()));
+                // 시스템 프롬프트 생성 (RAG 컨텍스트 포함)
+                String systemPrompt = buildSystemPromptWithRagContext(
+                    request.getSystemPrompt(),
+                    ragContext
+                );
+
+                if (systemPrompt != null && !systemPrompt.isEmpty()) {
+                    memory.add(SystemMessage.from(systemPrompt));
                 }
 
                 // DB에서 기존 대화 이력 로드

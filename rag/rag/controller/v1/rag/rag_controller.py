@@ -41,6 +41,7 @@ class CSVIndexRequest(BaseModel):
 class SearchRequest(BaseModel):
     """검색 요청"""
     query: str = Field(..., description="검색 쿼리", min_length=1)
+    project_id: Optional[str] = Field(None, description="프로젝트 ID (필터링용)")
     top_k: int = Field(5, description="최대 반환 문서 개수", ge=1, le=20)
     similarity_threshold: float = Field(0.1, description="유사도 임계값", ge=0.0, le=1.0)
     enable_reranking: bool = Field(False, description="리랭킹 사용 여부")
@@ -61,13 +62,14 @@ class CollectionStatsResponse(BaseModel):
     success: bool = Field(..., description="성공 여부")
     stats: Dict[str, Any] = Field(..., description="통계 정보")
 
-@router.post("/documents/upload", 
-             response_model=DocumentIndexResponse, 
-             tags=["RAG"], 
+@router.post("/documents/upload",
+             response_model=DocumentIndexResponse,
+             tags=["RAG"],
              summary="PDF 문서 업로드 및 색인")
 async def upload_pdf_and_index_document(
     file: UploadFile = File(..., description="업로드할 PDF 파일"),
     document_source: str = Form(..., description="문서 출처"),
+    project_id: str = Form(..., description="프로젝트 ID"),
     alpha: float = Form(-100, description="청킹 alpha 값"),
     post_process_max_size: int = Form(2000, description="청킹 최대 길이"),
     post_process_min_size: int = Form(500, description="청킹 최소 길이")
@@ -130,8 +132,12 @@ async def upload_pdf_and_index_document(
             texts = [doc.page_content for doc in chunked_documents]
             embeddings = await clova_embedding_service.aembed_documents(texts)
             
-            # 5. 벡터 색인
-            logger.info("벡터 색인 시작")
+            # 5. 벡터 색인 (project_id 메타데이터 포함)
+            logger.info(f"벡터 색인 시작 (project_id: {project_id})")
+            # 각 문서에 project_id 메타데이터 추가
+            for doc in chunked_documents:
+                doc.metadata['project_id'] = project_id
+
             indexed_ids = chroma_indexing_service.add_documents(
                 documents=chunked_documents,
                 embeddings=embeddings,
@@ -156,13 +162,14 @@ async def upload_pdf_and_index_document(
         logger.error(f"문서 색인 오류: {str(e)}")
         raise HTTPException(status_code=500, detail=f"문서 색인 중 오류 발생: {str(e)}")
 
-@router.post("/documents/upload-csv", 
-             response_model=DocumentIndexResponse, 
-             tags=["RAG"], 
+@router.post("/documents/upload-csv",
+             response_model=DocumentIndexResponse,
+             tags=["RAG"],
              summary="CSV 문서 업로드 및 색인")
 async def upload_csv_and_index_document(
     file: UploadFile = File(..., description="업로드할 CSV 파일"),
     document_source: str = Form(..., description="문서 출처"),
+    project_id: str = Form(..., description="프로젝트 ID"),
     encoding: str = Form("utf-8", description="파일 인코딩 (utf-8, cp949, latin-1)")
 ):
     """
@@ -212,14 +219,18 @@ async def upload_csv_and_index_document(
             # 2. CSV는 이미 행별로 청킹되어 있으므로 추가 청킹 불필요
             # 각 행이 이미 하나의 청크임
             chunked_documents = documents
-            
+
             # 3. 임베딩 생성
             logger.info(f"{len(chunked_documents)}개 행(청크) 임베딩 생성 시작")
             texts = [doc.page_content for doc in chunked_documents]
             embeddings = await clova_embedding_service.aembed_documents(texts)
-            
-            # 4. 벡터 색인
-            logger.info("벡터 색인 시작")
+
+            # 4. 벡터 색인 (project_id 메타데이터 포함)
+            logger.info(f"벡터 색인 시작 (project_id: {project_id})")
+            # 각 문서에 project_id 메타데이터 추가
+            for doc in chunked_documents:
+                doc.metadata['project_id'] = project_id
+
             indexed_ids = chroma_indexing_service.add_documents(
                 documents=chunked_documents,
                 embeddings=embeddings,
@@ -271,11 +282,23 @@ async def search_documents(request: SearchRequest):
             enable_reranking=request.enable_reranking
         )
         
-        # 출처 필터
-        filter_metadata = None
+        # 메타데이터 필터 설정
+        filter_metadata = {}
+
+        # 프로젝트 ID 필터 (우선순위 높음)
+        if request.project_id:
+            filter_metadata["project_id"] = request.project_id
+            logger.info(f"프로젝트 필터 적용: project_id={request.project_id}")
+
+        # 문서 출처 필터 (추가 필터)
         if request.filter_source:
-            filter_metadata = {"document_source": request.filter_source}
-        
+            filter_metadata["document_source"] = request.filter_source
+            logger.info(f"문서 출처 필터 적용: document_source={request.filter_source}")
+
+        # 필터가 없으면 None으로 설정
+        if not filter_metadata:
+            filter_metadata = None
+
         # 문서 검색
         logger.info(f"문서 검색 시작: '{request.query[:100]}...'")
         search_results = await rag_retrieval_service.search_documents_async(
@@ -327,37 +350,79 @@ async def simple_search(
     )
     return await search_documents(request)
 
-@router.delete("/documents/{document_source}", 
-               tags=["RAG"], 
-               summary="문서 삭제")
+@router.delete("/documents/{document_source}",
+               tags=["RAG"],
+               summary="문서 삭제 (출처 기준)")
 async def delete_documents_by_source(
     document_source: str = Path(..., description="삭제할 문서 출처")
 ):
     """
     출처 기준으로 문서를 삭제합니다.
-    
+
     **주의:** 해당 출처의 문서가 없을 수 있습니다.
     """
     try:
         deleted_count = chroma_indexing_service.delete_documents_by_source(document_source)
-        
+
         if deleted_count == 0:
             raise HTTPException(
-                status_code=404, 
+                status_code=404,
                 detail=f"문서 출처 '{document_source}'에 해당하는 문서가 없습니다."
             )
-        
+
         return {
             "success": True,
             "message": f"문서 출처 '{document_source}'에서 {deleted_count}개 문서 삭제 완료",
             "deleted_count": deleted_count
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"문서 삭제 오류: {str(e)}")
         raise HTTPException(status_code=500, detail=f"문서 삭제 중 오류 발생: {str(e)}")
+
+@router.delete("/documents/project/{project_id}",
+               tags=["RAG"],
+               summary="프로젝트 문서 일괄 삭제")
+async def delete_documents_by_project(
+    project_id: str = Path(..., description="삭제할 프로젝트 ID")
+):
+    """
+    특정 프로젝트의 모든 문서를 삭제합니다.
+
+    **주의:** 해당 프로젝트의 모든 문서가 영구 삭제됩니다.
+    """
+    try:
+        # 프로젝트 ID로 문서 조회
+        results = chroma_indexing_service.collection.get(
+            where={"project_id": project_id}
+        )
+
+        if not results['ids']:
+            raise HTTPException(
+                status_code=404,
+                detail=f"프로젝트 ID '{project_id}'에 해당하는 문서가 없습니다."
+            )
+
+        # 문서 삭제
+        chroma_indexing_service.collection.delete(ids=results['ids'])
+        deleted_count = len(results['ids'])
+
+        logger.info(f"프로젝트 '{project_id}'의 {deleted_count}개 문서 삭제 완료")
+
+        return {
+            "success": True,
+            "message": f"프로젝트 '{project_id}'의 {deleted_count}개 문서 삭제 완료",
+            "deleted_count": deleted_count,
+            "project_id": project_id
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"프로젝트 문서 삭제 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"프로젝트 문서 삭제 중 오류 발생: {str(e)}")
 
 @router.get("/stats", 
             response_model=CollectionStatsResponse, 
