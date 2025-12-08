@@ -103,13 +103,13 @@ public class DocumentService {
                 builder.part("file", new FileSystemResource(filePath.toFile()));
                 builder.part("document_source", document.getName());
                 builder.part("project_id", document.getProject().getId().toString());  // 프로젝트 ID 추가
-                builder.part("alpha", chunkSettings.getAlpha());
-                builder.part("post_process_max_size", chunkSettings.getChunkSize());
-                builder.part("post_process_min_size", chunkSettings.getChunkOverlap());
+                builder.part("alpha", -100);  // 기본값
+                builder.part("post_process_max_size", chunkSettings.getChunkSize() != null ? chunkSettings.getChunkSize() : 2000);
+                builder.part("post_process_min_size", chunkSettings.getChunkOverlap() != null ? chunkSettings.getChunkOverlap() : 500);
 
                 // RAG 서비스 호출
                 String response = ragWebClient.post()
-                        .uri("/v1/rag/documents/upload")
+                        .uri("/api/v1/RAG/documents/upload")
                         .contentType(MediaType.MULTIPART_FORM_DATA)
                         .body(BodyInserters.fromMultipartData(builder.build()))
                         .retrieve()

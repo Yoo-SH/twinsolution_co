@@ -158,7 +158,7 @@ public class ChatMessageService {
                     .build();
 
             RagDto.SearchResponse ragResponse = ragWebClient.post()
-                    .uri("/v1/rag/search")
+                    .uri("/api/v1/RAG/search")
                     .bodyValue(ragRequest)
                     .retrieve()
                     .bodyToMono(RagDto.SearchResponse.class)

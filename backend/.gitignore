@@ -46,3 +46,6 @@ twinsolution.mv.db
 .env
 src/main/resources/application.yaml
 src/main/resources/application.properties
+
+### Upload files
+uploads/
