@@ -4,6 +4,7 @@ import Header from '../components/Header';
 import ProjectPanel from '../components/ProjectPanel';
 import ChatMessage from '../components/ChatMessage';
 import ChatInput from '../components/ChatInput';
+import { useLLM } from '../contexts/LLMContext';
 import { getProjectMessages, getRecentProjects, sendProjectMessageStream } from '../services/api';
 import type { ChatMessage as ChatMessageDto, Project } from '../types/api';
 import './AIChat.css';
@@ -14,8 +15,6 @@ const quickQuestions = [
   '주차장 설치 기준 법령',
   '내진설계 의무 대상',
 ];
-
-const openAiModels = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o'];
 
 const AIChat = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -28,11 +27,13 @@ const AIChat = () => {
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [advancedOptions, setAdvancedOptions] = useState({
     systemPrompt: '',
-    model: 'gpt-3.5-turbo',
     temperature: 0.7,
     maxTokens: 1000,
     stream: false,
   });
+
+  // 전역 LLM 설정 사용
+  const { settings: llmSettings, currentModelInfo } = useLLM();
 
   const isMountedRef = useRef(true);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
@@ -157,7 +158,8 @@ const AIChat = () => {
       const payload = {
         content: trimmed,
         systemPrompt: advancedOptions.systemPrompt || undefined,
-        model: advancedOptions.model || undefined,
+        model: llmSettings.modelName,
+        llmProvider: llmSettings.provider,
         temperature: advancedOptions.temperature ?? undefined,
         maxTokens: advancedOptions.maxTokens ?? undefined,
       };
@@ -273,6 +275,10 @@ const AIChat = () => {
             </div>
 
             <div className="advanced-settings">
+              <div className="current-model-info">
+                현재 모델: <strong>{currentModelInfo?.displayName || llmSettings.modelName}</strong>
+                <span className="model-provider">({llmSettings.provider})</span>
+              </div>
               <button
                 type="button"
                 className="advanced-toggle"
@@ -297,25 +303,6 @@ const AIChat = () => {
                     />
                   </div>
                   <div className="advanced-grid">
-                    <div className="advanced-field">
-                      <label htmlFor="modelSelect">모델</label>
-                      <select
-                        id="modelSelect"
-                        value={advancedOptions.model}
-                        onChange={(e) =>
-                          setAdvancedOptions((prev) => ({
-                            ...prev,
-                            model: e.target.value,
-                          }))
-                        }
-                      >
-                        {openAiModels.map((model) => (
-                          <option key={model} value={model}>
-                            {model}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
                     <div className="advanced-field">
                       <label htmlFor="temperature">Temperature (0.0 ~ 2.0)</label>
                       <input

@@ -1,0 +1,65 @@
+# spring:
+#   application:
+#     name:
+
+#   # H2 Database Configuration (File-based)
+#   datasource:
+#     url:
+#     driver-class-name:
+#     username:
+#     password:
+
+#   # H2 Console Configuration
+#   h2:
+#     console:
+#       enabled:
+#       path:
+
+#   # JPA Configuration
+#   jpa:
+#     hibernate:
+#       ddl-auto:
+#     show-sql:
+#     properties:
+#       hibernate:
+#         format_sql:
+#         dialect:
+#     defer-datasource-initialization:
+
+#   # File Upload Configuration
+#   servlet:
+#     multipart:
+#       max-file-size:
+#       max-request-size:
+#       enabled:
+
+# # Server Configuration
+# server:
+#   port:
+
+# # Logging Configuration
+# logging:
+#   level:
+#     root:
+#     com.twinsolution.construction:
+#     org.hibernate.SQL:
+#     org.hibernate.type.descriptor.sql.BasicBinder:
+
+# # OpenAI Configuration
+# openai:
+#   api-key:
+#   model:
+#   max-tokens:
+#   temperature:
+#   api-url:
+
+# # Ollama Configuration
+# ollama:
+#   base-url:
+#   default-model:
+#   timeout:
+
+# # RAG Server Configuration
+# rag:
+#   server:
+#     url:

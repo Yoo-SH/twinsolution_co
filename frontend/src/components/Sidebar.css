@@ -55,6 +55,149 @@
   font-size: 16px;
   cursor: pointer;
   padding: 3px;
+  transition: transform 0.2s ease;
+}
+
+.settings-btn:hover {
+  transform: rotate(45deg);
+}
+
+/* AI 모델 설정 모달 - 백드롭 */
+.settings-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* AI 모델 설정 모달 */
+.settings-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  overflow: hidden;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -45%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.settings-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+}
+
+.settings-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.settings-modal-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.8;
+  transition: opacity 0.2s, transform 0.2s;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-modal-close:hover {
+  opacity: 1;
+  transform: rotate(90deg);
+}
+
+.settings-modal-content {
+  padding: 24px;
+}
+
+.settings-field {
+  margin-bottom: 14px;
+}
+
+.settings-field:last-child {
+  margin-bottom: 0;
+}
+
+.settings-field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.settings-field select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.settings-field select:focus {
+  outline: none;
+  border-color: var(--secondary-color);
+}
+
+.settings-model-desc {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.settings-loading {
+  text-align: center;
+  padding: 20px;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 .sidebar-nav {

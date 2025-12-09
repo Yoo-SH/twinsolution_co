@@ -7,7 +7,9 @@ import com.twinsolution.construction.dto.OpenAiDto;
 import com.twinsolution.construction.dto.RagDto;
 import com.twinsolution.construction.entity.ChatMessage;
 import com.twinsolution.construction.entity.ChatSession;
+import com.twinsolution.construction.entity.Project;
 import com.twinsolution.construction.exception.ResourceNotFoundException;
+import com.twinsolution.construction.llm.LLMProviderFactory;
 import com.twinsolution.construction.repository.ChatMessageRepository;
 import com.twinsolution.construction.repository.ChatSessionRepository;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -47,8 +49,7 @@ public class ChatMessageService {
     private final WebClient ragWebClient;  // RAG 서비스 클라이언트
 
     // LangChain4j 컴포넌트
-    private final ChatLanguageModel chatLanguageModel;
-    private final StreamingChatLanguageModel streamingChatLanguageModel;
+    private final LLMProviderFactory llmProviderFactory;  // 프로젝트별 LLM 제공
     private final Map<Long, ChatMemory> chatMemoryStore;
     private final LangChainConfig langChainConfig;
 
@@ -97,14 +98,17 @@ public class ChatMessageService {
     /**
      * LangChain4j를 사용한 멀티턴 대화 생성 (일반 응답)
      * RAG 기반 컨텍스트 검색 포함
+     * 프로젝트 설정에 따라 OpenAI 또는 Ollama 모델 사용
      */
     private String generateMultiTurnAIResponse(Long sessionId, ChatMessageDto.Request request) {
         // 세션 정보 가져오기
         ChatSession session = chatSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("채팅 세션", "ID", sessionId));
 
+        Project project = session.getProject();
+
         // RAG 기반 컨텍스트 검색 (프로젝트별 문서 검색)
-        String ragContext = retrieveRagContext(session.getProject().getId(), request.getContent());
+        String ragContext = retrieveRagContext(project.getId(), request.getContent());
 
         // 세션별 ChatMemory 가져오거나 생성
         ChatMemory chatMemory = chatMemoryStore.computeIfAbsent(sessionId,
@@ -130,8 +134,18 @@ public class ChatMessageService {
         // 현재 사용자 메시지를 메모리에 추가
         chatMemory.add(UserMessage.from(request.getContent()));
 
+        // 요청의 LLM 설정 사용 (없으면 기본값 OPENAI/gpt-3.5-turbo)
+        String llmProvider = request.getLlmProvider() != null ? request.getLlmProvider() : "OPENAI";
+        String modelName = request.getModel() != null ? request.getModel() : "gpt-3.5-turbo";
+
+        // LLM 모델 가져오기
+        ChatLanguageModel chatModel = llmProviderFactory.getChatModel(llmProvider, modelName);
+
+        log.info("LLM 모델 사용: Provider={}, Model={}, Session ID={}",
+                llmProvider, modelName, sessionId);
+
         // LangChain4j로 AI 응답 생성
-        Response<AiMessage> response = chatLanguageModel.generate(chatMemory.messages());
+        Response<AiMessage> response = chatModel.generate(chatMemory.messages());
         String aiResponseText = response.content().text();
 
         // AI 응답을 메모리에 추가
@@ -264,6 +278,7 @@ public class ChatMessageService {
     /**
      * SseEmitter를 사용한 멀티턴 스트리밍 방식으로 메시지 전송
      * RAG 기반 컨텍스트 검색 포함
+     * 프로젝트 설정에 따라 OpenAI 또는 Ollama 모델 사용
      * @param sessionId 세션 ID
      * @param request 채팅 메시지 요청
      * @return SseEmitter
@@ -271,6 +286,8 @@ public class ChatMessageService {
     public SseEmitter sendMessageStreamWithEmitter(Long sessionId, ChatMessageDto.Request request) {
         ChatSession session = chatSessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("채팅 세션", "ID", sessionId));
+
+        Project project = session.getProject();
 
         // 사용자 메시지 저장
         ChatMessage userMessage = ChatMessage.builder()
@@ -281,7 +298,7 @@ public class ChatMessageService {
         chatMessageRepository.save(userMessage);
 
         // RAG 기반 컨텍스트 검색 (프로젝트별 문서 검색)
-        String ragContext = retrieveRagContext(session.getProject().getId(), request.getContent());
+        String ragContext = retrieveRagContext(project.getId(), request.getContent());
 
         // SseEmitter 생성 (타임아웃: 5분)
         SseEmitter emitter = new SseEmitter(300000L);
@@ -313,6 +330,16 @@ public class ChatMessageService {
         // 현재 사용자 메시지를 메모리에 추가
         chatMemory.add(UserMessage.from(request.getContent()));
 
+        // 요청의 LLM 설정 사용 (없으면 기본값 OPENAI/gpt-3.5-turbo)
+        String llmProvider = request.getLlmProvider() != null ? request.getLlmProvider() : "OPENAI";
+        String modelName = request.getModel() != null ? request.getModel() : "gpt-3.5-turbo";
+
+        // 스트리밍 LLM 모델 가져오기
+        StreamingChatLanguageModel streamingModel = llmProviderFactory.getStreamingChatModel(llmProvider, modelName);
+
+        log.info("스트리밍 LLM 모델 사용: Provider={}, Model={}, Session ID={}",
+                llmProvider, modelName, sessionId);
+
         // 비동기 실행
         ExecutorService executor = Executors.newSingleThreadExecutor();
         AtomicReference<String> aiResponseRef = new AtomicReference<>("");
@@ -321,8 +348,8 @@ public class ChatMessageService {
             try {
                 log.info("LangChain4j 멀티턴 스트리밍 시작. 세션 ID: {}", sessionId);
 
-                // LangChain4j 스트리밍 모델 사용
-                streamingChatLanguageModel.generate(
+                // LangChain4j 스트리밍 모델 사용 (프로젝트별 모델)
+                streamingModel.generate(
                     chatMemory.messages(),
                     new dev.langchain4j.model.StreamingResponseHandler<AiMessage>() {
                         @Override

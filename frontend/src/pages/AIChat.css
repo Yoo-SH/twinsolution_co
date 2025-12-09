@@ -151,6 +151,33 @@
 
 .advanced-settings {
   margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.current-model-info {
+  font-size: 13px;
+  color: var(--text-secondary, #5a5a5a);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border-radius: 20px;
+  border: 1px solid #bae6fd;
+}
+
+.current-model-info strong {
+  color: var(--primary-color, #1b263b);
+  font-weight: 600;
+}
+
+.model-provider {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
 }
 
 .advanced-toggle {

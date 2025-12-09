@@ -21,10 +21,14 @@ public class ChatMessageDto {
                 example = "당신은 건설 전문가입니다. 건설, 건축 자재, 안전 규정, 프로젝트 관리에 대한 정확하고 실용적인 답변을 제공하세요.")
         private String systemPrompt;
 
-        @Schema(description = "사용할 OpenAI 모델 (선택사항, 기본값: gpt-3.5-turbo)",
-                example = "gpt-3.5-turbo",
-                allowableValues = {"gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "gpt-4o"})
+        @Schema(description = "사용할 모델 이름 (선택사항, 기본값: gpt-3.5-turbo)",
+                example = "gpt-3.5-turbo")
         private String model;
+
+        @Schema(description = "LLM Provider (OPENAI 또는 OLLAMA, 선택사항, 기본값: OPENAI)",
+                example = "OPENAI",
+                allowableValues = {"OPENAI", "OLLAMA"})
+        private String llmProvider;
 
         @Schema(description = "Temperature (0.0~2.0, 낮을수록 일관적, 높을수록 창의적, 선택사항)",
                 example = "0.7",
