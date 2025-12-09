@@ -49,6 +49,14 @@ public class Project {
     @Column(name = "status", length = 20, nullable = false)
     private String status;
 
+    @Column(name = "llm_provider", length = 20)
+    @Builder.Default
+    private String llmProvider = "OPENAI";  // 기본값: OPENAI
+
+    @Column(name = "model_name", length = 50)
+    @Builder.Default
+    private String modelName = "gpt-3.5-turbo";  // 기본값: gpt-3.5-turbo
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

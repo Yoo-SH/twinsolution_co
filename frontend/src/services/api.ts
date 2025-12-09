@@ -23,6 +23,8 @@ import type {
   QuickQuestionRequest,
   GeneratedDocumentRequest,
   AnalysisReportResponse,
+  LLMProvidersResponse,
+  OllamaAvailabilityResponse,
 } from '../types/api';
 
 const DASHBOARD_BASE = '/api/dashboard';
@@ -197,4 +199,13 @@ export const getAnalysisReport = (documentId: number, reportId: number) =>
 // Document details
 export const getDocument = (documentId: number) =>
   apiClient.get<DocumentItem>(`${DOCUMENTS_BASE}/${documentId}`);
+
+// LLM Provider APIs
+const LLM_BASE = '/api/llm';
+
+export const getLLMProviders = () =>
+  apiClient.get<LLMProvidersResponse>(`${LLM_BASE}/providers`);
+
+export const getOllamaAvailability = () =>
+  apiClient.get<OllamaAvailabilityResponse>(`${LLM_BASE}/ollama/available`);
 

@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { LLMProvider } from './contexts/LLMContext';
 import Dashboard from './pages/Dashboard';
 import History from './pages/History';
 import AIChat from './pages/AIChat';
@@ -10,17 +11,19 @@ import './App.css';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/documents" element={<AIChat />} />
-        <Route path="/rag" element={<RAGManagement />} />
-        <Route path="/chunking" element={<ChunkingSettings />} />
-        <Route path="/api" element={<APIIntegration />} />
-        <Route path="/history" element={<History />} />
-        <Route path="/projects/new" element={<ProjectCreate />} />
-      </Routes>
-    </Router>
+    <LLMProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/documents" element={<AIChat />} />
+          <Route path="/rag" element={<RAGManagement />} />
+          <Route path="/chunking" element={<ChunkingSettings />} />
+          <Route path="/api" element={<APIIntegration />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/projects/new" element={<ProjectCreate />} />
+        </Routes>
+      </Router>
+    </LLMProvider>
   );
 }
 

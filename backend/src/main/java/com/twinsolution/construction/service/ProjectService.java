@@ -35,6 +35,8 @@ public class ProjectService {
                 .floors(request.getFloors())
                 .parkingSpaces(request.getParkingSpaces())
                 .status(request.getStatus() != null ? request.getStatus() : "초기단계")
+                .llmProvider(request.getLlmProvider() != null ? request.getLlmProvider() : "OPENAI")
+                .modelName(request.getModelName() != null ? request.getModelName() : "gpt-3.5-turbo")
                 .build();
 
         Project savedProject = projectRepository.save(project);
@@ -85,6 +87,12 @@ public class ProjectService {
         }
         if (request.getStatus() != null) {
             project.setStatus(request.getStatus());
+        }
+        if (request.getLlmProvider() != null) {
+            project.setLlmProvider(request.getLlmProvider());
+        }
+        if (request.getModelName() != null) {
+            project.setModelName(request.getModelName());
         }
 
         return convertToResponse(project);
@@ -146,6 +154,8 @@ public class ProjectService {
                 .parkingSpaces(project.getParkingSpaces())
                 .status(project.getStatus())
                 .progress(calculateProgress(project))
+                .llmProvider(project.getLlmProvider())
+                .modelName(project.getModelName())
                 .createdAt(project.getCreatedAt())
                 .updatedAt(project.getUpdatedAt())
                 .latestChatSessionAt(latestSessionAt)

@@ -9,6 +9,8 @@ export interface DashboardSummary {
 
 export type ProjectStatus = '초기단계' | '승인대기' | '서류검토' | '설계진행' | string;
 
+export type LLMProvider = 'OPENAI' | 'OLLAMA';
+
 export interface Project {
   id: number;
   name: string;
@@ -21,6 +23,8 @@ export interface Project {
   parkingSpaces: number | null;
   status: ProjectStatus;
   progress: number | null;
+  llmProvider: LLMProvider | null;
+  modelName: string | null;
   createdAt: string;
   updatedAt: string;
   latestChatSessionAt: string | null;
@@ -36,6 +40,8 @@ export interface ProjectRequest {
   floors: string;
   parkingSpaces: number;
   status?: ProjectStatus;
+  llmProvider?: LLMProvider;
+  modelName?: string;
 }
 
 export type ProjectUpdateRequest = Partial<ProjectRequest>;
@@ -150,6 +156,7 @@ export interface ChatMessagePayload {
   content: string;
   systemPrompt?: string;
   model?: string;
+  llmProvider?: LLMProvider;
   temperature?: number;
   maxTokens?: number;
   stream?: boolean;
@@ -203,5 +210,29 @@ export interface AnalysisReportResponse {
   keywords: string[] | null;
   createdAt: string;
   updatedAt: string;
+}
+
+// LLM Provider 관련 타입
+export interface LLMModelInfo {
+  name: string;
+  displayName: string;
+  description: string;
+}
+
+export interface LLMProviderInfo {
+  name: string;
+  id: LLMProvider;
+  available: boolean;
+  models: LLMModelInfo[];
+}
+
+export interface LLMProvidersResponse {
+  providers: LLMProviderInfo[];
+}
+
+export interface OllamaAvailabilityResponse {
+  available: boolean;
+  models: string[];
+  baseUrl: string;
 }
 

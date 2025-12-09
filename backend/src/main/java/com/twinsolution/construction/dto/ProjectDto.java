@@ -42,6 +42,15 @@ public class ProjectDto {
                 example = "초기단계",
                 allowableValues = {"초기단계", "승인대기", "서류검토", "설계진행"})
         private String status;
+
+        @Schema(description = "LLM Provider (선택사항, 기본값: OPENAI)",
+                example = "OPENAI",
+                allowableValues = {"OPENAI", "OLLAMA"})
+        private String llmProvider;
+
+        @Schema(description = "LLM 모델명 (선택사항, 기본값: gpt-3.5-turbo)",
+                example = "gpt-3.5-turbo")
+        private String modelName;
     }
 
     @Schema(name = "ProjectResponse", description = "프로젝트 응답")
@@ -83,6 +92,12 @@ public class ProjectDto {
 
         @Schema(description = "진행률 (0-100)", example = "25")
         private Integer progress;
+
+        @Schema(description = "LLM Provider", example = "OPENAI")
+        private String llmProvider;
+
+        @Schema(description = "LLM 모델명", example = "gpt-3.5-turbo")
+        private String modelName;
 
         @Schema(description = "생성일시")
         private LocalDateTime createdAt;
@@ -152,5 +167,14 @@ public class ProjectDto {
                 example = "설계진행",
                 allowableValues = {"초기단계", "승인대기", "서류검토", "설계진행"})
         private String status;
+
+        @Schema(description = "LLM Provider",
+                example = "OLLAMA",
+                allowableValues = {"OPENAI", "OLLAMA"})
+        private String llmProvider;
+
+        @Schema(description = "LLM 모델명",
+                example = "llama2")
+        private String modelName;
     }
 }
