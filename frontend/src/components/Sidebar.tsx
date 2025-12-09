@@ -10,6 +10,15 @@ const Sidebar = () => {
   const [showSettings, setShowSettings] = useState(false);
   const { settings, setSettings, providers, loadingProviders, currentProviderInfo, currentModelInfo } = useLLM();
 
+  // 모델별 최대 토큰 수 반환
+  const getMaxTokensForModel = (modelName: string): number => {
+    if (modelName.includes('gpt-3.5-turbo')) return 4096;
+    if (modelName.includes('gpt-4')) return 8192;
+    return 4096; // 기본값
+  };
+
+  const currentMaxTokens = getMaxTokensForModel(settings.modelName);
+
   const mainMenuItems = [
     { path: '/', label: '대시보드', icon: '📊' },
     { path: '/documents', label: '서류작성 AI', icon: '📄' },
@@ -76,6 +85,7 @@ const Sidebar = () => {
                           const newProvider = providers.find(p => p.id === e.target.value);
                           const firstModel = newProvider?.models[0]?.name ?? '';
                           setSettings({
+                            ...settings,
                             provider: e.target.value as LLMProvider,
                             modelName: firstModel,
                           });
@@ -97,7 +107,17 @@ const Sidebar = () => {
                       <label>모델</label>
                       <select
                         value={settings.modelName}
-                        onChange={(e) => setSettings({ ...settings, modelName: e.target.value })}
+                        onChange={(e) => {
+                          const newModelName = e.target.value;
+                          const newMaxTokens = getMaxTokensForModel(newModelName);
+                          // 현재 maxTokens가 새 모델의 최대값을 초과하면 조정
+                          const adjustedMaxTokens = Math.min(settings.maxTokens, newMaxTokens);
+                          setSettings({
+                            ...settings,
+                            modelName: newModelName,
+                            maxTokens: adjustedMaxTokens
+                          });
+                        }}
                       >
                         {currentProviderInfo?.models.map((model) => (
                           <option key={model.name} value={model.name}>
@@ -112,6 +132,49 @@ const Sidebar = () => {
                         {currentModelInfo.description}
                       </div>
                     )}
+
+                    <div className="settings-divider" />
+
+                    <div className="settings-field">
+                      <label>시스템 프롬프트</label>
+                      <textarea
+                        rows={3}
+                        value={settings.systemPrompt}
+                        onChange={(e) => setSettings({ ...settings, systemPrompt: e.target.value })}
+                        placeholder="시스템 프롬프트를 입력하세요 (선택사항)"
+                      />
+                    </div>
+
+                    <div className="settings-field">
+                      <label>Temperature (0.0 ~ 1.0)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={1}
+                        step={0.1}
+                        value={settings.temperature}
+                        onChange={(e) => {
+                          const value = Math.min(1, Math.max(0, Number(e.target.value)));
+                          setSettings({ ...settings, temperature: value });
+                        }}
+                      />
+                      <small>값이 높을수록 창의적이고 다양한 응답을 생성합니다</small>
+                    </div>
+
+                    <div className="settings-field">
+                      <label>Max Tokens (최대: {currentMaxTokens.toLocaleString()})</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={currentMaxTokens}
+                        value={settings.maxTokens}
+                        onChange={(e) => {
+                          const value = Math.min(currentMaxTokens, Math.max(1, Number(e.target.value)));
+                          setSettings({ ...settings, maxTokens: value });
+                        }}
+                      />
+                      <small>생성할 최대 토큰 수를 설정합니다 (현재 모델: {currentMaxTokens.toLocaleString()} 토큰)</small>
+                    </div>
                   </>
                 )}
               </div>

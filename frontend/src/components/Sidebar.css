@@ -149,6 +149,8 @@
 
 .settings-modal-content {
   padding: 24px;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 .settings-field {
@@ -167,20 +169,46 @@
   margin-bottom: 6px;
 }
 
-.settings-field select {
+.settings-field select,
+.settings-field input[type="number"],
+.settings-field textarea {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 13px;
   background-color: #ffffff;
-  cursor: pointer;
   transition: border-color 0.2s;
+  font-family: inherit;
 }
 
-.settings-field select:focus {
+.settings-field select {
+  cursor: pointer;
+}
+
+.settings-field textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.settings-field select:focus,
+.settings-field input:focus,
+.settings-field textarea:focus {
   outline: none;
   border-color: var(--secondary-color);
+}
+
+.settings-field small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.settings-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 16px 0;
 }
 
 .settings-model-desc {
