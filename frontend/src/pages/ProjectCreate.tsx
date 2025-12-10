@@ -24,7 +24,6 @@ const ProjectCreate = () => {
   const [form, setForm] = useState<ProjectRequest>(defaultForm);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -47,19 +46,17 @@ const ProjectCreate = () => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
-    setSuccessMessage(null);
 
     try {
       const createdProject = await createProject(form);
       window.dispatchEvent(
         new CustomEvent<Project>('project-created', { detail: createdProject }),
       );
-      setSuccessMessage('프로젝트가 성공적으로 생성되었습니다.');
-      setForm(defaultForm);
+      // 프로젝트 생성 성공 시 즉시 서류작성 AI 페이지로 이동
+      navigate('/documents');
     } catch (err) {
       const message = err instanceof Error ? err.message : '프로젝트를 생성하지 못했습니다.';
       setError(message);
-    } finally {
       setSubmitting(false);
     }
   };
@@ -71,14 +68,6 @@ const ProjectCreate = () => {
         <Header title="프로젝트 생성" />
         <div className="project-create-content">
           {error && <div className="project-create-alert error">{error}</div>}
-          {successMessage && (
-            <div className="project-create-alert success">
-              <span>{successMessage}</span>
-              <button type="button" onClick={() => navigate('/documents')}>
-                서류작성 AI로 이동
-              </button>
-            </div>
-          )}
 
           <form className="project-create-form" onSubmit={handleSubmit}>
             <div className="form-group">

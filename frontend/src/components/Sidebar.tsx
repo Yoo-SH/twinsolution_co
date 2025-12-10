@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { useLLM } from '../contexts/LLMContext';
@@ -8,11 +8,20 @@ import './Sidebar.css';
 const Sidebar = () => {
   const location = useLocation();
   const [showSettings, setShowSettings] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string>('');
-  const { settings, setSettings, providers, loadingProviders, currentProviderInfo, currentModelInfo } = useLLM();
+  const { settings, setSettings, providers, loadingProviders } = useLLM();
 
   // 임시 설정 (모달에서 수정 중인 설정)
   const [tempSettings, setTempSettings] = useState(settings);
+
+  // tempSettings를 기반으로 현재 provider 정보 계산 (즉시 업데이트)
+  const tempProviderInfo = useMemo(() => {
+    return providers.find(p => p.id === tempSettings.provider);
+  }, [providers, tempSettings.provider]);
+
+  // tempSettings를 기반으로 현재 model 정보 계산
+  const tempModelInfo = useMemo(() => {
+    return tempProviderInfo?.models.find(m => m.name === tempSettings.modelName);
+  }, [tempProviderInfo, tempSettings.modelName]);
 
   // 모델별 최대 토큰 수 반환
   const getMaxTokensForModel = (modelName: string): number => {
@@ -26,18 +35,17 @@ const Sidebar = () => {
   // 모달이 열릴 때 현재 설정을 임시 설정에 복사
   const handleOpenSettings = () => {
     setTempSettings(settings);
-    setSaveMessage('');
     setShowSettings(true);
   };
 
-  // 저장 버튼 클릭
+  // 저장 버튼 클릭 - 즉시 모달 닫고 alert 표시
   const handleSaveSettings = () => {
     setSettings(tempSettings);
-    setSaveMessage('설정이 저장되었습니다!');
+    setShowSettings(false);
+    // 모달이 닫힌 후 알림 표시
     setTimeout(() => {
-      setSaveMessage('');
-      setShowSettings(false);
-    }, 1500);
+      alert('설정이 저장되었습니다!');
+    }, 100);
   };
 
   const mainMenuItems = [
@@ -140,7 +148,7 @@ const Sidebar = () => {
                           });
                         }}
                       >
-                        {currentProviderInfo?.models.map((model) => (
+                        {tempProviderInfo?.models.map((model) => (
                           <option key={model.name} value={model.name}>
                             {model.displayName}
                           </option>
@@ -148,9 +156,9 @@ const Sidebar = () => {
                       </select>
                     </div>
 
-                    {currentModelInfo?.description && (
+                    {tempModelInfo?.description && (
                       <div className="settings-model-desc">
-                        {currentModelInfo.description}
+                        {tempModelInfo.description}
                       </div>
                     )}
 
@@ -205,9 +213,6 @@ const Sidebar = () => {
                       >
                         저장
                       </button>
-                      {saveMessage && (
-                        <span className="settings-save-message">{saveMessage}</span>
-                      )}
                     </div>
                   </>
                 )}
