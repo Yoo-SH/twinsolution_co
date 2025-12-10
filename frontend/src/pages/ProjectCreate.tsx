@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
+import Toast from '../components/Toast';
 import { createProject } from '../services/api';
 import type { Project, ProjectRequest, ProjectStatus } from '../types/api';
 import './ProjectCreate.css';
@@ -24,6 +26,7 @@ const ProjectCreate = () => {
   const [form, setForm] = useState<ProjectRequest>(defaultForm);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -52,8 +55,12 @@ const ProjectCreate = () => {
       window.dispatchEvent(
         new CustomEvent<Project>('project-created', { detail: createdProject }),
       );
-      // 프로젝트 생성 성공 시 즉시 서류작성 AI 페이지로 이동
-      navigate('/documents');
+      // 프로젝트 생성 성공 toast 표시
+      setShowSuccessToast(true);
+      // 1.5초 후 서류작성 AI 페이지로 이동
+      setTimeout(() => {
+        navigate('/documents');
+      }, 1500);
     } catch (err) {
       const message = err instanceof Error ? err.message : '프로젝트를 생성하지 못했습니다.';
       setError(message);
@@ -199,6 +206,16 @@ const ProjectCreate = () => {
           </form>
         </div>
       </main>
+
+      {/* Toast 알림 */}
+      {showSuccessToast && createPortal(
+        <Toast
+          message="프로젝트가 생성되었습니다!"
+          type="success"
+          onClose={() => setShowSuccessToast(false)}
+        />,
+        document.body
+      )}
     </div>
   );
 };

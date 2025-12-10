@@ -2,12 +2,14 @@ import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { useLLM } from '../contexts/LLMContext';
+import Toast from './Toast';
 import type { LLMProvider } from '../types/api';
 import './Sidebar.css';
 
 const Sidebar = () => {
   const location = useLocation();
   const [showSettings, setShowSettings] = useState(false);
+  const [showToast, setShowToast] = useState(false);
   const { settings, setSettings, providers, loadingProviders } = useLLM();
 
   // 임시 설정 (모달에서 수정 중인 설정)
@@ -38,13 +40,13 @@ const Sidebar = () => {
     setShowSettings(true);
   };
 
-  // 저장 버튼 클릭 - 즉시 모달 닫고 alert 표시
+  // 저장 버튼 클릭 - 즉시 모달 닫고 toast 표시
   const handleSaveSettings = () => {
     setSettings(tempSettings);
     setShowSettings(false);
-    // 모달이 닫힌 후 알림 표시
+    // 모달이 닫힌 후 toast 표시
     setTimeout(() => {
-      alert('설정이 저장되었습니다!');
+      setShowToast(true);
     }, 100);
   };
 
@@ -266,6 +268,16 @@ const Sidebar = () => {
           </div>
         </div>
       </div>
+
+      {/* Toast 알림 */}
+      {showToast && createPortal(
+        <Toast
+          message="설정이 저장되었습니다!"
+          type="success"
+          onClose={() => setShowToast(false)}
+        />,
+        document.body
+      )}
     </aside>
   );
 };
