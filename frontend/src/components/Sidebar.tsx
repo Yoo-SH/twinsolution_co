@@ -8,7 +8,11 @@ import './Sidebar.css';
 const Sidebar = () => {
   const location = useLocation();
   const [showSettings, setShowSettings] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string>('');
   const { settings, setSettings, providers, loadingProviders, currentProviderInfo, currentModelInfo } = useLLM();
+
+  // 임시 설정 (모달에서 수정 중인 설정)
+  const [tempSettings, setTempSettings] = useState(settings);
 
   // 모델별 최대 토큰 수 반환
   const getMaxTokensForModel = (modelName: string): number => {
@@ -17,7 +21,24 @@ const Sidebar = () => {
     return 4096; // 기본값
   };
 
-  const currentMaxTokens = getMaxTokensForModel(settings.modelName);
+  const currentMaxTokens = getMaxTokensForModel(tempSettings.modelName);
+
+  // 모달이 열릴 때 현재 설정을 임시 설정에 복사
+  const handleOpenSettings = () => {
+    setTempSettings(settings);
+    setSaveMessage('');
+    setShowSettings(true);
+  };
+
+  // 저장 버튼 클릭
+  const handleSaveSettings = () => {
+    setSettings(tempSettings);
+    setSaveMessage('설정이 저장되었습니다!');
+    setTimeout(() => {
+      setSaveMessage('');
+      setShowSettings(false);
+    }, 1500);
+  };
 
   const mainMenuItems = [
     { path: '/', label: '대시보드', icon: '📊' },
@@ -45,7 +66,7 @@ const Sidebar = () => {
         </div>
         <button
           className="settings-btn"
-          onClick={() => setShowSettings(!showSettings)}
+          onClick={handleOpenSettings}
           title="AI 모델 설정"
         >
           ⚙️
@@ -80,12 +101,12 @@ const Sidebar = () => {
                     <div className="settings-field">
                       <label>LLM Provider</label>
                       <select
-                        value={settings.provider}
+                        value={tempSettings.provider}
                         onChange={(e) => {
                           const newProvider = providers.find(p => p.id === e.target.value);
                           const firstModel = newProvider?.models[0]?.name ?? '';
-                          setSettings({
-                            ...settings,
+                          setTempSettings({
+                            ...tempSettings,
                             provider: e.target.value as LLMProvider,
                             modelName: firstModel,
                           });
@@ -106,14 +127,14 @@ const Sidebar = () => {
                     <div className="settings-field">
                       <label>모델</label>
                       <select
-                        value={settings.modelName}
+                        value={tempSettings.modelName}
                         onChange={(e) => {
                           const newModelName = e.target.value;
                           const newMaxTokens = getMaxTokensForModel(newModelName);
                           // 현재 maxTokens가 새 모델의 최대값을 초과하면 조정
-                          const adjustedMaxTokens = Math.min(settings.maxTokens, newMaxTokens);
-                          setSettings({
-                            ...settings,
+                          const adjustedMaxTokens = Math.min(tempSettings.maxTokens, newMaxTokens);
+                          setTempSettings({
+                            ...tempSettings,
                             modelName: newModelName,
                             maxTokens: adjustedMaxTokens
                           });
@@ -139,8 +160,8 @@ const Sidebar = () => {
                       <label>시스템 프롬프트</label>
                       <textarea
                         rows={3}
-                        value={settings.systemPrompt}
-                        onChange={(e) => setSettings({ ...settings, systemPrompt: e.target.value })}
+                        value={tempSettings.systemPrompt}
+                        onChange={(e) => setTempSettings({ ...tempSettings, systemPrompt: e.target.value })}
                         placeholder="시스템 프롬프트를 입력하세요 (선택사항)"
                       />
                     </div>
@@ -152,10 +173,10 @@ const Sidebar = () => {
                         min={0}
                         max={1}
                         step={0.1}
-                        value={settings.temperature}
+                        value={tempSettings.temperature}
                         onChange={(e) => {
                           const value = Math.min(1, Math.max(0, Number(e.target.value)));
-                          setSettings({ ...settings, temperature: value });
+                          setTempSettings({ ...tempSettings, temperature: value });
                         }}
                       />
                       <small>값이 높을수록 창의적이고 다양한 응답을 생성합니다</small>
@@ -167,13 +188,26 @@ const Sidebar = () => {
                         type="number"
                         min={1}
                         max={currentMaxTokens}
-                        value={settings.maxTokens}
+                        value={tempSettings.maxTokens}
                         onChange={(e) => {
                           const value = Math.min(currentMaxTokens, Math.max(1, Number(e.target.value)));
-                          setSettings({ ...settings, maxTokens: value });
+                          setTempSettings({ ...tempSettings, maxTokens: value });
                         }}
                       />
                       <small>생성할 최대 토큰 수를 설정합니다 (현재 모델: {currentMaxTokens.toLocaleString()} 토큰)</small>
+                    </div>
+
+                    {/* 저장 버튼 */}
+                    <div className="settings-actions">
+                      <button
+                        className="settings-save-btn"
+                        onClick={handleSaveSettings}
+                      >
+                        저장
+                      </button>
+                      {saveMessage && (
+                        <span className="settings-save-message">{saveMessage}</span>
+                      )}
                     </div>
                   </>
                 )}

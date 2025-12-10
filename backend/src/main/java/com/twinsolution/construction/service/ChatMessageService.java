@@ -159,6 +159,7 @@ public class ChatMessageService {
 
     /**
      * RAG 서비스에서 관련 문서 검색 (프로젝트별 격리)
+     * 검색된 문서들을 참고 문서 형식으로 포맷팅하여 반환
      */
     private String retrieveRagContext(Long projectId, String query) {
         try {
@@ -178,10 +179,12 @@ public class ChatMessageService {
                     .bodyToMono(RagDto.SearchResponse.class)
                     .block();
 
-            if (ragResponse != null && ragResponse.getSuccess() && ragResponse.getContext() != null) {
-                log.info("RAG 검색 성공. 프로젝트 ID: {}, 결과 개수: {}, 컨텍스트 길이: {}",
-                        projectId, ragResponse.getTotalResults(), ragResponse.getContext().length());
-                return ragResponse.getContext();
+            if (ragResponse != null && ragResponse.getSuccess() && ragResponse.getResults() != null && !ragResponse.getResults().isEmpty()) {
+                log.info("RAG 검색 성공. 프로젝트 ID: {}, 결과 개수: {}",
+                        projectId, ragResponse.getTotalResults());
+
+                // 검색된 문서들을 포맷팅
+                return formatRetrievedDocuments(ragResponse.getResults());
             }
 
             log.debug("RAG 검색 결과 없음. 프로젝트 ID: {}", projectId);
@@ -194,27 +197,113 @@ public class ChatMessageService {
     }
 
     /**
+     * 검색된 문서들을 참고 문서 형식으로 포맷팅
+     */
+    private String formatRetrievedDocuments(List<RagDto.SearchResult> results) {
+        StringBuilder formatted = new StringBuilder();
+
+        for (int i = 0; i < results.size(); i++) {
+            RagDto.SearchResult result = results.get(i);
+            Map<String, Object> metadata = result.getMetadata();
+
+            formatted.append("### 문서 ").append(i + 1).append("\n");
+
+            // 메타데이터에서 파일명 추출 - document_source 우선, 없으면 source에서 파일명만 추출
+            if (metadata != null) {
+                String fileName = null;
+
+                // 원본 문서명이 metadata에 있으면 사용
+                if (metadata.containsKey("document_source")) {
+                    fileName = metadata.get("document_source").toString();
+                } else if (metadata.containsKey("source")) {
+                    // source에서 파일명만 추출 (경로 제거)
+                    String sourcePath = metadata.get("source").toString();
+                    if (sourcePath.contains("/")) {
+                        fileName = sourcePath.substring(sourcePath.lastIndexOf("/") + 1);
+                    } else if (sourcePath.contains("\\")) {
+                        fileName = sourcePath.substring(sourcePath.lastIndexOf("\\") + 1);
+                    } else {
+                        fileName = sourcePath;
+                    }
+                }
+
+                if (fileName != null) {
+                    formatted.append("**출처:** ").append(fileName).append("\n");
+                }
+            }
+
+            // 페이지 정보가 있으면 추가
+            if (metadata != null && metadata.containsKey("page")) {
+                formatted.append("**페이지:** ").append(metadata.get("page")).append("\n");
+            }
+
+            // 문서 내용
+            formatted.append("**내용:**\n");
+            formatted.append(result.getContent()).append("\n");
+
+            if (i < results.size() - 1) {
+                formatted.append("\n---\n\n");
+            }
+        }
+
+        return formatted.toString();
+    }
+
+    /**
      * RAG 컨텍스트를 포함한 시스템 프롬프트 생성
+     * {retrieved_documents} 플레이스홀더를 실제 검색된 문서로 대체
      */
     private String buildSystemPromptWithRagContext(String originalSystemPrompt, String ragContext) {
-        StringBuilder systemPrompt = new StringBuilder();
+        String systemPrompt;
 
-        // 기본 시스템 프롬프트
+        log.info("=== 시스템 프롬프트 구성 시작 ===");
+        log.info("원본 시스템 프롬프트 길이: {}", originalSystemPrompt != null ? originalSystemPrompt.length() : 0);
+        log.info("RAG 컨텍스트 길이: {}", ragContext != null ? ragContext.length() : 0);
+
+        // 기본 시스템 프롬프트 설정
         if (originalSystemPrompt != null && !originalSystemPrompt.isEmpty()) {
-            systemPrompt.append(originalSystemPrompt);
+            systemPrompt = originalSystemPrompt;
+            log.info("사용자 정의 시스템 프롬프트 사용");
         } else {
-            systemPrompt.append("당신은 건축 프로젝트를 지원하는 AI 어시스턴트입니다.");
+            systemPrompt = "당신은 건축 프로젝트를 지원하는 AI 어시스턴트입니다.";
+            log.info("기본 시스템 프롬프트 사용");
         }
 
-        // RAG 컨텍스트 추가
+        // RAG 컨텍스트 처리
         if (ragContext != null && !ragContext.isEmpty()) {
-            systemPrompt.append("\n\n");
-            systemPrompt.append("다음은 프로젝트 문서에서 검색한 관련 정보입니다:\n\n");
-            systemPrompt.append(ragContext);
-            systemPrompt.append("\n\n위 정보를 참고하여 사용자의 질문에 답변해주세요.");
+            log.info("RAG 컨텍스트 존재. 처리 시작...");
+
+            // {retrieved_documents} 플레이스홀더가 있으면 대체
+            if (systemPrompt.contains("{retrieved_documents}")) {
+                systemPrompt = systemPrompt.replace("{retrieved_documents}", ragContext);
+                log.info("✓ {{retrieved_documents}} 플레이스홀더를 RAG 컨텍스트로 대체 완료");
+                log.debug("대체된 RAG 컨텍스트 (처음 200자): {}",
+                    ragContext.length() > 200 ? ragContext.substring(0, 200) + "..." : ragContext);
+            } else {
+                // 플레이스홀더가 없으면 뒤에 추가 (기존 방식)
+                systemPrompt = systemPrompt + "\n\n"
+                        + "다음은 프로젝트 문서에서 검색한 관련 정보입니다:\n\n"
+                        + ragContext
+                        + "\n\n위 정보를 참고하여 사용자의 질문에 답변해주세요.";
+                log.info("✓ 시스템 프롬프트 뒤에 RAG 컨텍스트 추가 완료 (플레이스홀더 없음)");
+            }
+        } else {
+            log.warn("RAG 컨텍스트가 없습니다!");
+
+            // RAG 컨텍스트가 없으면 플레이스홀더 제거 또는 안내 메시지로 대체
+            if (systemPrompt.contains("{retrieved_documents}")) {
+                systemPrompt = systemPrompt.replace("{retrieved_documents}",
+                        "(검색된 문서가 없습니다. 제공된 문서에 관련 정보가 없거나 문서가 업로드되지 않았을 수 있습니다.)");
+                log.info("플레이스홀더를 안내 메시지로 대체했습니다.");
+            }
         }
 
-        return systemPrompt.toString();
+        log.info("최종 시스템 프롬프트 길이: {}", systemPrompt.length());
+        log.debug("최종 시스템 프롬프트 (처음 500자): {}",
+            systemPrompt.length() > 500 ? systemPrompt.substring(0, 500) + "..." : systemPrompt);
+        log.info("=== 시스템 프롬프트 구성 완료 ===");
+
+        return systemPrompt;
     }
 
     /**
