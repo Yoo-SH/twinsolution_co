@@ -24,13 +24,6 @@ const AIChat = () => {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
-  const [advancedOptions, setAdvancedOptions] = useState({
-    systemPrompt: '',
-    temperature: 0.7,
-    maxTokens: 1000,
-    stream: false,
-  });
 
   // 전역 LLM 설정 사용
   const { settings: llmSettings, currentModelInfo } = useLLM();
@@ -157,11 +150,11 @@ const AIChat = () => {
     try {
       const payload = {
         content: trimmed,
-        systemPrompt: advancedOptions.systemPrompt || undefined,
+        systemPrompt: llmSettings.systemPrompt || undefined,
         model: llmSettings.modelName,
         llmProvider: llmSettings.provider,
-        temperature: advancedOptions.temperature ?? undefined,
-        maxTokens: advancedOptions.maxTokens ?? undefined,
+        temperature: llmSettings.temperature ?? undefined,
+        maxTokens: llmSettings.maxTokens ?? undefined,
       };
 
       let accumulatedContent = '';
@@ -274,84 +267,11 @@ const AIChat = () => {
               </button>
             </div>
 
-            <div className="advanced-settings">
+            <div className="current-settings-info">
               <div className="current-model-info">
                 현재 모델: <strong>{currentModelInfo?.displayName || llmSettings.modelName}</strong>
                 <span className="model-provider">({llmSettings.provider})</span>
               </div>
-              <button
-                type="button"
-                className="advanced-toggle"
-                onClick={() => setShowAdvancedOptions((prev) => !prev)}
-              >
-                {showAdvancedOptions ? '고급 옵션 숨기기' : '고급 옵션 보기'}
-              </button>
-              {showAdvancedOptions && (
-                <div className="advanced-panel">
-                  <div className="advanced-field">
-                    <label htmlFor="systemPrompt">시스템 프롬프트</label>
-                    <textarea
-                      id="systemPrompt"
-                      rows={3}
-                      value={advancedOptions.systemPrompt}
-                      onChange={(e) =>
-                        setAdvancedOptions((prev) => ({
-                          ...prev,
-                          systemPrompt: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="advanced-grid">
-                    <div className="advanced-field">
-                      <label htmlFor="temperature">Temperature (0.0 ~ 2.0)</label>
-                      <input
-                        id="temperature"
-                        type="number"
-                        min={0}
-                        max={2}
-                        step={0.1}
-                        value={advancedOptions.temperature}
-                        onChange={(e) =>
-                          setAdvancedOptions((prev) => ({
-                            ...prev,
-                            temperature: Number(e.target.value),
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="advanced-field">
-                      <label htmlFor="maxTokens">Max Tokens</label>
-                      <input
-                        id="maxTokens"
-                        type="number"
-                        min={1}
-                        value={advancedOptions.maxTokens}
-                        onChange={(e) =>
-                          setAdvancedOptions((prev) => ({
-                            ...prev,
-                            maxTokens: Number(e.target.value),
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="advanced-field checkbox-field">
-                      <label htmlFor="streamToggle">스트리밍 모드 (추후 지원)</label>
-                      <input
-                        id="streamToggle"
-                        type="checkbox"
-                        checked={advancedOptions.stream}
-                        onChange={(e) =>
-                          setAdvancedOptions((prev) => ({
-                            ...prev,
-                            stream: e.target.checked,
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {error && (

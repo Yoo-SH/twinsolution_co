@@ -5,6 +5,9 @@ import { getLLMProviders } from '../services/api';
 interface LLMSettings {
   provider: LLMProvider;
   modelName: string;
+  systemPrompt: string;
+  temperature: number;
+  maxTokens: number;
 }
 
 interface LLMContextType {
@@ -19,6 +22,9 @@ interface LLMContextType {
 const defaultSettings: LLMSettings = {
   provider: 'OPENAI',
   modelName: 'gpt-3.5-turbo',
+  systemPrompt: '',
+  temperature: 0.7,
+  maxTokens: 1000,
 };
 
 const LLMContext = createContext<LLMContextType | undefined>(undefined);
