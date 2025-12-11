@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import Slider from '../components/Slider';
 import SeparatorManager from '../components/SeparatorManager';
 import RecommendationPanel from '../components/RecommendationPanel';
+import Toast from '../components/Toast';
 import { previewChunks } from '../services/api';
 import { useChunkSettings } from '../hooks/useChunkSettings';
 import type { ChunkPreviewResponse } from '../types/api';
@@ -26,6 +28,8 @@ const ChunkingSettings = () => {
   const [previewText, setPreviewText] = useState(DEFAULT_PREVIEW_TEXT);
   const [previewResult, setPreviewResult] = useState<ChunkPreviewResponse | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [showInfoToast, setShowInfoToast] = useState(false);
   const isMountedRef = useRef(true);
 
   useEffect(() => {
@@ -54,7 +58,7 @@ const ChunkingSettings = () => {
     setSaving(true);
     try {
       await saveSettings({ chunkSize, chunkOverlap });
-      alert('설정이 저장되었습니다!');
+      setShowSuccessToast(true);
     } catch (err) {
       // Error already handled in hook
     } finally {
@@ -71,7 +75,7 @@ const ChunkingSettings = () => {
 
   const handlePreview = async () => {
     if (!previewText.trim()) {
-      alert('미리보기 텍스트를 입력해주세요.');
+      setShowInfoToast(true);
       return;
     }
 
@@ -259,6 +263,25 @@ const ChunkingSettings = () => {
           </div>
         </div>
       </main>
+
+      {/* Toast 알림 */}
+      {showSuccessToast && createPortal(
+        <Toast
+          message="설정이 저장되었습니다!"
+          type="success"
+          onClose={() => setShowSuccessToast(false)}
+        />,
+        document.body
+      )}
+
+      {showInfoToast && createPortal(
+        <Toast
+          message="미리보기 텍스트를 입력해주세요."
+          type="info"
+          onClose={() => setShowInfoToast(false)}
+        />,
+        document.body
+      )}
     </div>
   );
 };
