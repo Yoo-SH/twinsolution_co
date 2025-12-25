@@ -22,10 +22,11 @@
   margin-bottom: 12px;
 }
 
-.logo-image {
-  width: 120px;
-  height: auto;
-  object-fit: contain;
+.logo-text {
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+  letter-spacing: 1px;
 }
 
 .project-info {

@@ -22,13 +22,13 @@ const Sidebar = () => {
     <aside className="sidebar">
       <div className="sidebar-header">
         <div className="logo">
-          <img src="/triplemahorlogo.png" alt="Triple Major Logo" className="logo-image" />
+          <div className="logo-text">Build Genie</div>
         </div>
         <div className="project-info">
           <h2>건축허가</h2>
           <p>자동화 시스템</p>
         </div>
-        <button className="settings-btn">⚙️</button>
+        {/* <button className="settings-btn">⚙️</button> */}
       </div>
 
       <nav className="sidebar-nav">
@@ -68,9 +68,9 @@ const Sidebar = () => {
 
       <div className="sidebar-footer">
         <div className="user-profile">
-          <div className="user-avatar">TM</div>
+          <div className="user-avatar">BG</div>
           <div className="user-info">
-            <span className="user-name">트리플 메이저</span>
+            <span className="user-name">Build Genie</span>
           </div>
         </div>
       </div>

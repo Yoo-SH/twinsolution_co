@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import Slider from '../components/Slider';
 import SeparatorManager from '../components/SeparatorManager';
 import RecommendationPanel from '../components/RecommendationPanel';
-import { previewChunks } from '../services/api';
+// import { previewChunks } from '../services/api';
 import { useChunkSettings } from '../hooks/useChunkSettings';
 import type { ChunkPreviewResponse } from '../types/api';
 import './ChunkingSettings.css';
@@ -26,6 +26,7 @@ const ChunkingSettings = () => {
   const [previewText, setPreviewText] = useState(DEFAULT_PREVIEW_TEXT);
   const [previewResult, setPreviewResult] = useState<ChunkPreviewResponse | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const isMountedRef = useRef(true);
 
   useEffect(() => {
@@ -129,7 +130,7 @@ const ChunkingSettings = () => {
     }
 
     setPreviewLoading(true);
-    setError(null);
+    setPreviewError(null);
     setPreviewResult(null); // 이전 결과 초기화
 
     try {
@@ -172,7 +173,7 @@ const ChunkingSettings = () => {
       }
       const message =
         err instanceof Error ? err.message : '미리보기를 생성하지 못했습니다.';
-      setError(message);
+      setPreviewError(message);
       setPreviewResult(null);
       setPreviewLoading(false);
     }
@@ -319,6 +320,11 @@ const ChunkingSettings = () => {
               )}
             </div>
 
+            {previewError && (
+              <div className="chunk-error">
+                <span>{previewError}</span>
+              </div>
+            )}
             {previewResult && (
               <div className="preview-chunks">
                 {previewResult.chunks.slice(0, 3).map((chunk) => (

@@ -6,7 +6,7 @@ import FileUpload from '../components/FileUpload';
 import DocumentTable from '../components/DocumentTable';
 import SearchBar from '../components/SearchBar';
 import FilterDropdown from '../components/FilterDropdown';
-import { deleteDocument, uploadDocument } from '../services/api';
+import { deleteDocument } from '../services/api';
 import { useProjects } from '../hooks/useProjects';
 import { useDocuments } from '../hooks/useDocuments';
 import type { Project } from '../types/api';

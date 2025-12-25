@@ -4,7 +4,7 @@ import Header from '../components/Header';
 import ProjectPanel from '../components/ProjectPanel';
 import ChatMessage from '../components/ChatMessage';
 import ChatInput from '../components/ChatInput';
-import { getProjectMessages, getRecentProjects, sendProjectMessageStream } from '../services/api';
+import { getProjectMessages, getRecentProjects } from '../services/api';
 import type { ChatMessage as ChatMessageDto, Project } from '../types/api';
 import './AIChat.css';
 
@@ -25,7 +25,6 @@ const AIChat = () => {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [generatingDocuments, setGeneratingDocuments] = useState(false);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [advancedOptions, setAdvancedOptions] = useState({
     systemPrompt: '',

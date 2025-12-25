@@ -23,7 +23,7 @@ const ChatMessage = ({ role, message, timestamp, source, isStreaming, isWaiting 
       <div className="message-header">
         <div className="message-avatar">
           {type === 'ai' ? (
-            <img src="/tm-logo.png" alt="TM" className="avatar-logo" />
+            <div className="avatar-logo-text">BG</div>
           ) : (
             '👤'
           )}
