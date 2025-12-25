@@ -25,6 +25,7 @@ const AIChat = () => {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generatingDocuments, setGeneratingDocuments] = useState(false);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [advancedOptions, setAdvancedOptions] = useState({
     systemPrompt: '',
