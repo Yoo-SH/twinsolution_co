@@ -79,7 +79,9 @@ export const sendProjectMessageStream = async (
   onError: (error: Error) => void
 ) => {
   try {
-    const response = await fetch(`http://localhost:8080${PROJECTS_BASE}/${projectId}/messages`, {
+    const rawBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+    const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
+    const response = await fetch(`${API_BASE_URL}${PROJECTS_BASE}/${projectId}/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

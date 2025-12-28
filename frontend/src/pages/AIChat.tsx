@@ -4,7 +4,7 @@ import Header from '../components/Header';
 import ProjectPanel from '../components/ProjectPanel';
 import ChatMessage from '../components/ChatMessage';
 import ChatInput from '../components/ChatInput';
-import { getProjectMessages, getRecentProjects } from '../services/api';
+import { getProjectMessages, getRecentProjects, sendProjectMessageStream } from '../services/api';
 import type { ChatMessage as ChatMessageDto, Project } from '../types/api';
 import './AIChat.css';
 
@@ -128,7 +128,8 @@ const AIChat = () => {
     }
   }, [selectedProjectId, loadMessages]);
 
-  // 시연용: 더미 AI 응답 생성 함수
+  // 시연용: 더미 AI 응답 생성 함수 (주석 처리됨 - 실제 API 사용)
+  /*
   const getMockAIResponse = (question: string): string => {
     const lowerQuestion = question.toLowerCase();
     
@@ -201,7 +202,8 @@ const AIChat = () => {
 출처: 건축법규_매뉴얼_2024.pdf`;
   };
 
-  // 시연용: 스트리밍 시뮬레이션 함수
+  // 시연용: 스트리밍 시뮬레이션 함수 (주석 처리됨 - 실제 API 사용)
+  /*
   const simulateStreaming = async (
     fullText: string,
     onChunk: (chunk: string) => void,
@@ -224,6 +226,7 @@ const AIChat = () => {
       currentIndex += chunkSize;
     }, 50); // 50ms마다 청크 전송
   };
+  */
 
   const handleSendMessage = async (text: string) => {
     if (!selectedProjectId) return;
@@ -251,12 +254,18 @@ const AIChat = () => {
     setError(null);
 
     try {
-      // 시연용: 더미 AI 응답 스트리밍
-      const mockResponse = getMockAIResponse(trimmed);
+      // 실제 API 호출
+      const payload = {
+        content: trimmed,
+        systemPrompt: advancedOptions.systemPrompt || undefined,
+        model: advancedOptions.model || undefined,
+        temperature: advancedOptions.temperature ?? undefined,
+        maxTokens: advancedOptions.maxTokens ?? undefined,
+      };
       let accumulatedContent = '';
-
-      await simulateStreaming(
-        mockResponse,
+      await sendProjectMessageStream(
+        selectedProjectId,
+        payload,
         (chunk: string) => {
           accumulatedContent += chunk;
           setMessages((prev) =>
@@ -267,24 +276,29 @@ const AIChat = () => {
             )
           );
         },
-        () => {
+        async () => {
           if (!isMountedRef.current) return;
+          await loadMessages(selectedProjectId);
+          setSending(false);
+        },
+        (error: Error) => {
+          if (!isMountedRef.current) return;
+          setError(error.message || '메시지를 전송하지 못했습니다.');
+          setMessages((prev) =>
+            prev.filter(
+              (msg) =>
+                msg.id !== optimisticUserMessage.id && msg.id !== optimisticAssistantMessage.id
+            )
+          );
           setSending(false);
         }
       );
 
-      // 실제 API 호출은 주석 처리 (시연용)
-      // const payload = {
-      //   content: trimmed,
-      //   systemPrompt: advancedOptions.systemPrompt || undefined,
-      //   model: advancedOptions.model || undefined,
-      //   temperature: advancedOptions.temperature ?? undefined,
-      //   maxTokens: advancedOptions.maxTokens ?? undefined,
-      // };
+      // 시연용: 더미 AI 응답 스트리밍 (주석 처리)
+      // const mockResponse = getMockAIResponse(trimmed);
       // let accumulatedContent = '';
-      // await sendProjectMessageStream(
-      //   selectedProjectId,
-      //   payload,
+      // await simulateStreaming(
+      //   mockResponse,
       //   (chunk: string) => {
       //     accumulatedContent += chunk;
       //     setMessages((prev) =>
@@ -295,20 +309,8 @@ const AIChat = () => {
       //       )
       //     );
       //   },
-      //   async () => {
+      //   () => {
       //     if (!isMountedRef.current) return;
-      //     await loadMessages(selectedProjectId);
-      //     setSending(false);
-      //   },
-      //   (error: Error) => {
-      //     if (!isMountedRef.current) return;
-      //     setError(error.message || '메시지를 전송하지 못했습니다.');
-      //     setMessages((prev) =>
-      //       prev.filter(
-      //         (msg) =>
-      //           msg.id !== optimisticUserMessage.id && msg.id !== optimisticAssistantMessage.id
-      //       )
-      //     );
       //     setSending(false);
       //   }
       // );
